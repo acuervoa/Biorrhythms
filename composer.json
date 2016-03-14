@@ -1,24 +1,26 @@
 {
     "license": "MIT",
 
-
-
-    "autoload" : {
-        "psr-4":  {
-	   "": "src/"
-	 }
-    },
-
     "config": {
         "optimize-autoloader": true
     },
 
     "require" : {
-        "nesbot/carbon": "1.21.x"
+        "nesbot/carbon": "1.21.x",
+        "monolog/monolog": "1.18.x"
     },
 
     "require-dev": {
-        "codeception/codeception": "^2.1"
+        "codeception/codeception": "2.1.7",
+        "codeception/specify": "0.4.3",
+        "codeception/verify": "0.3.0",
+        "mockery/mockery": "0.9.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Biorrhythms\\": "src/",
+            "Mocks\\": "tests/Mocks"
+        }
     }
 
 }
