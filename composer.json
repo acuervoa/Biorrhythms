@@ -1,9 +1,13 @@
 {
     "license": "MIT",
 
+
+
     "autoload" : {
-        "psr-4":  ("", "src/")
-    }
+        "psr-4":  {
+	   "": "src/"
+	 }
+    },
 
     "config": {
         "optimize-autoloader": true
