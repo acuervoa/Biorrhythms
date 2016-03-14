@@ -1,0 +1,27 @@
+{
+    "license": "MIT",
+    "authors" : {
+        "name": "Andres Cuervo",
+	"email" : "kuerbo@gmail.com",
+	"homepage" : "www.andrescuervo.info",
+	"role" : "Developer"
+	}
+    },
+
+    "autoload" : {
+        "psr-4": { "", "src/" }
+    }
+
+    "config": {
+        "optimize-autoloader": true
+    },
+
+    "require" : {
+        "nesbot/carbon": "1.21.x"
+    },
+
+    "require-dev": {
+        "codeception/codeception": "^2.1"
+    }
+
+}
