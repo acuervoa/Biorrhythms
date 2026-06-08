@@ -1,57 +1,83 @@
 <?php
 
-require_once __DIR__ . "/../../vendor/autoload.php";
+declare(strict_types=1);
 
-use \Biorrhythms\Biorrhythms;
+require_once __DIR__ . '/../../vendor/autoload.php';
 
-class BiorrhythmsTest extends \Codeception\TestCase\Test
+use Biorrhythms\Biorrhythms;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
+class BiorrhythmsTest extends TestCase
 {
+    private Biorrhythms $tester;
 
-    use Codeception\Specify;
-
-    /**
-     * @var \UnitTester
-     */
-    protected $tester;
-
-    protected function _before()
+    protected function setUp(): void
     {
+        parent::setUp();
         $this->tester = new Biorrhythms();
     }
 
-    protected function _after()
+    /**
+     * @return array<string, array{0: float, 1: float}>
+     */
+    public static function physicalProvider(): array
     {
+        return [
+            'calculatePhysicalZero' => [0.0, 0.0],
+            'calculatePhysical' => [1.0, 0.2697967711570243],
+            'calculatePhysicalNegative' => [-1.0, -0.2697967711570243],
+            'calculatePhysicalMidCycle' => [10.0, 0.39840108984624044],
+            'calculatePhysicalFullCycle' => [23.0, 0.0],
+            'calculatePhysicalDoubleCycle' => [46.0, 0.0],
+        ];
     }
 
-    // tests
-
-    private function provider(){
-        return array(
-            "calculatePhysical" => array([0, 0], [1, 0.27318093483271549]),
-            "calculateEmotional" => array([0, 0], [1, 0.22439890157779652]),
-            "calculateIntellectual" => array([0, 0], [1, 0.19039920433321803])
-        );
+    /**
+     * @return array<string, array{0: float, 1: float}>
+     */
+    public static function emotionalProvider(): array
+    {
+        return [
+            'calculateEmotionalZero' => [0.0, 0.0],
+            'calculateEmotional' => [1.0, 0.2225209339563144],
+            'calculateEmotionalNegative' => [-1.0, -0.2225209339563144],
+            'calculateEmotionalMidCycle' => [14.0, 0.0],
+            'calculateEmotionalFullCycle' => [28.0, 0.0],
+            'calculateEmotionalDoubleCycle' => [56.0, 0.0],
+        ];
     }
 
-    public function testCalculatePhysical()
+    /**
+     * @return array<string, array{0: float, 1: float}>
+     */
+    public static function intellectualProvider(): array
     {
-        $this->specify("calculatePhysical", function($time, $result){
-            verify($this->tester->calculatePhysical($time))->equals($result);
-        },["examples" => $this->provider()['calculatePhysical']]);
+        return [
+            'calculateIntellectualZero' => [0.0, 0.0],
+            'calculateIntellectual' => [1.0, 0.1892512443604102],
+            'calculateIntellectualNegative' => [-1.0, -0.1892512443604102],
+            'calculateIntellectualMidCycle' => [16.5, 0.0],
+            'calculateIntellectualFullCycle' => [33.0, 0.0],
+            'calculateIntellectualDoubleCycle' => [66.0, 0.0],
+        ];
     }
 
-    public function testCalculateEmotional()
+    #[DataProvider('physicalProvider')]
+    public function testCalculatePhysical(float $time, float $expected): void
     {
-        $this->specify("calculateEmotional", function($time, $result){
-            verify($this->tester->calculateEmotional($time))->equals($result);
-        },["examples" => $this->provider()['calculateEmotional']]);
+        $this->assertEqualsWithDelta($expected, $this->tester->calculatePhysical($time), 1e-12);
     }
 
-    public function testCalculateIntellectual()
+    #[DataProvider('emotionalProvider')]
+    public function testCalculateEmotional(float $time, float $expected): void
     {
+        $this->assertEqualsWithDelta($expected, $this->tester->calculateEmotional($time), 1e-12);
+    }
 
-        $this->specify("calculateIntellectual", function($time, $result){
-            verify($this->tester->calculateIntellectual($time))->equals($result);
-        },["examples" => $this->provider()['calculateIntellectual']]);
+    #[DataProvider('intellectualProvider')]
+    public function testCalculateIntellectual(float $time, float $expected): void
+    {
+        $this->assertEqualsWithDelta($expected, $this->tester->calculateIntellectual($time), 1e-12);
     }
 }

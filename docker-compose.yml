@@ -1,0 +1,9 @@
+services:
+  app:
+    image: php:8.3-cli-alpine
+    working_dir: /app
+    command: sh -lc "php -S 0.0.0.0:8000 -t ."
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
