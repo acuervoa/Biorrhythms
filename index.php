@@ -293,6 +293,7 @@ $seriesData = [
         .hero-stats-inline {
             flex: 0 0 auto;
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             align-items: stretch;
             margin-top: 4px;
@@ -562,7 +563,7 @@ $seriesData = [
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 10px;
+            flex-basis: 100%;
         }
 
         .hero-forecast-chip {
@@ -2031,7 +2032,6 @@ $seriesData = [
                             </p>
                         </details>
                     </div>
-                    <div class="hero-forecast-chips" id="heroForecastChips" aria-live="polite"></div>
                     <div class="hero-stats-inline">
                         <div class="stat">
                             <small>Físico</small>
@@ -2048,6 +2048,7 @@ $seriesData = [
                             <strong id="stat-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
                             <span>33 días</span>
                         </div>
+                        <div class="hero-forecast-chips" id="heroForecastChips" aria-live="polite"></div>
                     </div>
                 </div>
             </article>
@@ -2565,6 +2566,25 @@ $seriesData = [
                 label.textContent = 'Hoy';
                 markersGroup.appendChild(label);
             }
+
+            // start label
+            const startLabel = make('text', {
+                x: padding.left + 4,
+                y: height - padding.bottom + 16,
+                class: 'marker-label',
+            });
+            startLabel.textContent = visibleWindow[0]?.label ?? '';
+            gridGroup.appendChild(startLabel);
+
+            // end label
+            const endLabel = make('text', {
+                x: width - padding.right - 4,
+                y: height - padding.bottom + 16,
+                class: 'marker-label',
+                'text-anchor': 'end',
+            });
+            endLabel.textContent = visibleWindow[visibleWindow.length - 1]?.label ?? '';
+            gridGroup.appendChild(endLabel);
         }
 
         function buildPaths() {
@@ -3722,15 +3742,21 @@ $seriesData = [
 
         function setZoom(days) {
             const total = data.window.length;
-            const half = Math.floor(Math.min(days, total) / 2);
+            const clampedDays = Math.min(days, total);
+            const half = Math.floor(clampedDays / 2);
             const center = data.selectedIndex;
-            visibleStartIndex = Math.max(0, Math.min(center - half, total - days));
-            const end = Math.min(visibleStartIndex + Math.min(days, total), total);
+            visibleStartIndex = Math.max(0, Math.min(center - half, total - clampedDays));
+            const end = Math.min(visibleStartIndex + clampedDays, total);
             visibleWindow = data.window.slice(visibleStartIndex, end);
 
             zoomButtons.forEach((btn) => {
                 btn.classList.toggle('is-active', Number(btn.dataset.zoom) === days);
             });
+
+            slider.min = String(visibleStartIndex);
+            slider.max = String(end - 1);
+            if (Number(slider.value) < visibleStartIndex) slider.value = String(visibleStartIndex);
+            if (Number(slider.value) > end - 1) slider.value = String(end - 1);
 
             markersGroup.innerHTML = '';
             buildGrid();
@@ -3741,8 +3767,7 @@ $seriesData = [
             btn.addEventListener('click', () => setZoom(Number(btn.dataset.zoom)));
         });
 
-        buildGrid();
-        buildPaths();
+        setZoom(91);
         updateWidgetChart();
         applyTheme(theme);
         updateWidgetEmbedSnippet();
