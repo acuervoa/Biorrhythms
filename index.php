@@ -1731,17 +1731,17 @@ $seriesData = [
 
         .events-list {
             display: grid;
-            gap: 8px;
+            gap: 12px;
         }
 
         .event-row {
             display: grid;
-            grid-template-columns: 100px 1fr;
+            grid-template-columns: 110px 1fr;
             align-items: start;
-            gap: 14px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.06);
+            gap: 18px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.07);
             background: rgba(255,255,255,0.02);
         }
 
@@ -1750,22 +1750,22 @@ $seriesData = [
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.07em;
-            padding-top: 4px;
+            padding-top: 6px;
         }
 
         .event-chips-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
         }
 
         .event-chip {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 4px 9px;
+            gap: 5px;
+            padding: 6px 12px;
             border-radius: 999px;
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             border: 1px solid rgba(255,255,255,0.08);
             background: rgba(255,255,255,0.03);
             white-space: nowrap;
@@ -1774,7 +1774,7 @@ $seriesData = [
         .event-chip em {
             font-style: normal;
             font-weight: 700;
-            font-size: 0.74rem;
+            font-size: 0.76rem;
         }
 
         .event-chip.is-peak   { border-color: rgba(110,231,183,0.3); }
