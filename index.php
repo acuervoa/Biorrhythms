@@ -3317,6 +3317,7 @@ $seriesData = [
                 const chips = [];
 
                 for (let i = 1; i < w.length - 1; i++) {
+                    if (w[i].date < todayDate) continue;
                     const prev = w[i - 1][key];
                     const cur  = w[i][key];
                     const next = w[i + 1][key];
