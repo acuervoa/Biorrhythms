@@ -413,6 +413,13 @@ $seriesData = [
             color: #7a4800;
         }
 
+        /* share-badge inside widget preview (light bg) - not inside dark share card canvas */
+        body[data-theme="light"] .widget-preview-mini .share-badge {
+            background: rgba(160, 90, 0, 0.10);
+            border-color: rgba(160, 90, 0, 0.28);
+            color: #7a4800;
+        }
+
         /* hero-callout summary arrow + text */
         body[data-theme="light"] .hero-callout summary {
             color: #7a4800;
