@@ -1731,60 +1731,58 @@ $seriesData = [
 
         .events-list {
             display: grid;
-            gap: 6px;
+            gap: 8px;
         }
 
         .event-row {
             display: grid;
-            grid-template-columns: 100px 32px 1fr auto;
-            align-items: center;
-            gap: 12px;
+            grid-template-columns: 100px 1fr;
+            align-items: start;
+            gap: 14px;
             padding: 10px 14px;
             border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.06);
             background: rgba(255,255,255,0.02);
         }
 
-        .event-row.is-today {
-            border-color: rgba(248,201,93,0.3);
-            background: rgba(248,201,93,0.05);
-        }
-
-        .event-date {
-            font-size: 0.85rem;
-            color: var(--muted);
-        }
-
-        .event-icon {
-            font-size: 1.1rem;
-            text-align: center;
-        }
-
-        .event-desc {
-            font-size: 0.88rem;
-            line-height: 1.4;
-        }
-
-        .event-desc strong {
-            display: block;
-            font-size: 0.92rem;
-        }
-
-        .event-desc small {
-            color: var(--muted);
-            font-size: 0.78rem;
-        }
-
-        .event-score {
-            font-size: 0.88rem;
+        .event-rhythm-label {
+            font-size: 0.82rem;
             font-weight: 700;
-            text-align: right;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding-top: 4px;
+        }
+
+        .event-chips-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .event-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
             white-space: nowrap;
         }
 
-        .event-score.is-peak { color: var(--emotional); }
-        .event-score.is-valley { color: var(--physical); }
-        .event-score.is-zero { color: var(--muted); }
+        .event-chip em {
+            font-style: normal;
+            font-weight: 700;
+            font-size: 0.74rem;
+        }
+
+        .event-chip.is-peak   { border-color: rgba(110,231,183,0.3); }
+        .event-chip.is-peak em { color: var(--emotional); }
+        .event-chip.is-valley  { border-color: rgba(255,123,84,0.3); }
+        .event-chip.is-valley em { color: var(--physical); }
+        .event-chip.is-zero   { border-color: rgba(125,211,252,0.2); color: var(--muted); }
+        .event-chip.is-today  { outline: 1px solid rgba(248,201,93,0.5); }
 
         .compat-head {
             display: flex;
@@ -3304,64 +3302,50 @@ $seriesData = [
         const eventsPill = document.getElementById('eventsPill');
 
         function buildSpecialEvents() {
-            const SERIES = ['physical', 'emotional', 'intellectual'];
-            const LABELS = { physical: 'Físico', emotional: 'Emocional', intellectual: 'Intelectual' };
-            const avg = (p) => (p.physical + p.emotional + p.intellectual) / 3;
+            const SERIES = [
+                { key: 'physical',     label: 'Físico',      color: 'var(--physical)'     },
+                { key: 'emotional',    label: 'Emocional',   color: 'var(--emotional)'    },
+                { key: 'intellectual', label: 'Intelectual', color: 'var(--intellectual)' },
+            ];
             const w = data.window;
-            const events = [];
+            const todayDate = data.window[data.selectedIndex].date;
+            let totalEvents = 0;
 
-            for (let i = 1; i < w.length - 1; i++) {
-                const prev = avg(w[i - 1]);
-                const cur  = avg(w[i]);
-                const next = avg(w[i + 1]);
-                const isToday = w[i].date === data.window[data.selectedIndex].date;
-
-                // local max
-                if (cur > prev && cur > next && cur > 0.35) {
-                    const rhythms = SERIES.filter((s) => w[i][s] > 0.7).map((s) => LABELS[s]);
-                    events.push({ point: w[i], type: 'peak', score: cur, rhythms, isToday });
-                }
-                // local min
-                else if (cur < prev && cur < next && cur < -0.35) {
-                    const rhythms = SERIES.filter((s) => w[i][s] < -0.7).map((s) => LABELS[s]);
-                    events.push({ point: w[i], type: 'valley', score: cur, rhythms, isToday });
-                }
-                // zero crossing (average changes sign)
-                else if (prev * cur < 0) {
-                    const dir = cur > 0 ? 'subiendo' : 'bajando';
-                    events.push({ point: w[i], type: 'zero', score: cur, dir, isToday });
-                }
-            }
-
-            eventsPill.textContent = `${events.length} eventos`;
             eventsList.innerHTML = '';
 
-            if (events.length === 0) {
-                eventsList.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;padding:8px 0">Sin eventos destacados en la ventana.</p>';
-                return;
-            }
+            SERIES.forEach(({ key, label, color }) => {
+                const chips = [];
 
-            events.forEach(({ point, type, score, rhythms, dir, isToday }) => {
+                for (let i = 1; i < w.length - 1; i++) {
+                    const prev = w[i - 1][key];
+                    const cur  = w[i][key];
+                    const next = w[i + 1][key];
+                    const isToday = w[i].date === todayDate;
+                    const todayMark = isToday ? ' is-today' : '';
+
+                    if (cur > prev && cur > next && cur > 0.85) {
+                        chips.push(`<span class="event-chip is-peak${todayMark}" title="${w[i].label}">▲ ${w[i].label} <em>+${Math.round(cur * 100)}%</em></span>`);
+                        totalEvents++;
+                    } else if (cur < prev && cur < next && cur < -0.85) {
+                        chips.push(`<span class="event-chip is-valley${todayMark}" title="${w[i].label}">▼ ${w[i].label} <em>${Math.round(cur * 100)}%</em></span>`);
+                        totalEvents++;
+                    } else if (prev * cur < 0) {
+                        const dir = cur > 0 ? '↑' : '↓';
+                        chips.push(`<span class="event-chip is-zero${todayMark}" title="${w[i].label}">${dir} ${w[i].label}</span>`);
+                        totalEvents++;
+                    }
+                }
+
                 const row = document.createElement('div');
-                row.className = `event-row${isToday ? ' is-today' : ''}`;
-
-                const icon = type === 'peak' ? '▲' : type === 'valley' ? '▼' : '◆';
-                const label = type === 'peak'
-                    ? `Pico${rhythms?.length ? ' · ' + rhythms.join(', ') : ''}`
-                    : type === 'valley'
-                        ? `Valle${rhythms?.length ? ' · ' + rhythms.join(', ') : ''}`
-                        : `Cruce de cero (${dir})`;
-                const scoreClass = type === 'peak' ? 'is-peak' : type === 'valley' ? 'is-valley' : 'is-zero';
-                const scoreTxt = `${score >= 0 ? '+' : ''}${Math.round(score * 100)}%`;
-
+                row.className = 'event-row';
                 row.innerHTML = `
-                    <span class="event-date">${point.label}</span>
-                    <span class="event-icon">${icon}</span>
-                    <div class="event-desc"><strong>${label}</strong><small>offset ${point.offset} días</small></div>
-                    <span class="event-score ${scoreClass}">${scoreTxt}</span>
+                    <span class="event-rhythm-label" style="color:${color}">${label}</span>
+                    <div class="event-chips-row">${chips.join('')}</div>
                 `;
                 eventsList.appendChild(row);
             });
+
+            eventsPill.textContent = `${totalEvents} eventos`;
         }
 
         function updateForecast(index) {
