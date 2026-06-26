@@ -1507,6 +1507,14 @@ $seriesData = [
             display: none;
         }
 
+        body.embed-view .widget-grid {
+            grid-template-columns: 1fr;
+        }
+
+        body.embed-view .widget-grid > div.widget-panel {
+            display: none;
+        }
+
         .forecast-spark {
             margin-top: 14px;
             width: 100%;
