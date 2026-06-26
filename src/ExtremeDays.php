@@ -38,7 +38,7 @@ class ExtremeDays
                 $date      = $fromDate->modify('+' . $d . ' days');
                 $results[] = [
                     'date'         => $date->format('Y-m-d'),
-                    'label'        => $date->format('D j M Y'),
+                    'label'        => DateFormatter::long($date),
                     'avg'          => round($avg * 100.0, 1),
                     'physical'     => round($p * 100.0, 1),
                     'emotional'    => round($e * 100.0, 1),

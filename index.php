@@ -5,10 +5,12 @@ declare(strict_types=1);
 require_once __DIR__ . '/src/Biorrhythms.php';
 require_once __DIR__ . '/src/Compatibility.php';
 require_once __DIR__ . '/src/ExtremeDays.php';
+require_once __DIR__ . '/src/DateFormatter.php';
 
 use Biorrhythms\Biorrhythms;
 use Biorrhythms\Compatibility;
 use Biorrhythms\ExtremeDays;
+use Biorrhythms\DateFormatter;
 
 function clampDateInput(?string $value, string $fallback): string
 {
@@ -64,7 +66,7 @@ for ($offset = -$windowRadius; $offset <= $windowRadius; $offset++) {
 
     $window[] = [
         'date' => $date->format('Y-m-d'),
-        'label' => $date->format('D j M'),
+        'label' => DateFormatter::short($date),
         'offset' => $offset,
         'physical' => $bio->calculatePhysical($daysSinceBirth),
         'emotional' => $bio->calculateEmotional($daysSinceBirth),
