@@ -295,10 +295,13 @@ $seriesData = [
             border-color: rgba(199, 136, 39, 0.25);
         }
 
-        /* Chart SVG elements */
-        body[data-theme="light"] .chart-grid line,
-        body[data-theme="light"] .chart-zero {
-            stroke: rgba(0, 0, 0, 0.12);
+        /* Chart SVG grid lines */
+        body[data-theme="light"] .grid-line {
+            stroke: rgba(0, 0, 0, 0.13);
+        }
+
+        body[data-theme="light"] .zero-line {
+            stroke: rgba(140, 90, 0, 0.45);
         }
 
         body[data-theme="light"] .marker {
@@ -355,6 +358,51 @@ $seriesData = [
         body[data-theme="light"] .chip {
             border-color: rgba(0, 0, 0, 0.15);
             background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* colored borders: bump opacity + shift to darker hue on light bg */
+        body[data-theme="light"] .hero-forecast-chip.is-best {
+            border-color: rgba(0, 130, 80, 0.45);
+            background: rgba(0, 130, 80, 0.07);
+        }
+        body[data-theme="light"] .hero-forecast-chip.is-best strong { color: #006040; }
+
+        body[data-theme="light"] .hero-forecast-chip.is-worst {
+            border-color: rgba(200, 60, 20, 0.45);
+            background: rgba(200, 60, 20, 0.07);
+        }
+        body[data-theme="light"] .hero-forecast-chip.is-worst strong { color: #922010; }
+
+        body[data-theme="light"] .forecast-day.is-best,
+        body[data-theme="light"] .decision-day.is-best,
+        body[data-theme="light"] .compat-day.is-best,
+        body[data-theme="light"] .compat-heatmap-cell.is-best {
+            border-color: rgba(140, 90, 0, 0.55);
+            box-shadow: 0 0 0 1px rgba(140, 90, 0, 0.22), 0 6px 16px rgba(140, 90, 0, 0.08);
+        }
+
+        body[data-theme="light"] .forecast-day.is-worst,
+        body[data-theme="light"] .decision-day.is-worst,
+        body[data-theme="light"] .compat-day.is-worst,
+        body[data-theme="light"] .compat-heatmap-cell.is-worst {
+            border-color: rgba(200, 60, 20, 0.5);
+        }
+
+        body[data-theme="light"] .event-chip.is-peak {
+            border-color: rgba(0, 130, 80, 0.5);
+        }
+        body[data-theme="light"] .event-chip.is-valley {
+            border-color: rgba(200, 60, 20, 0.5);
+        }
+        body[data-theme="light"] .event-chip.is-zero {
+            border-color: rgba(0, 100, 160, 0.35);
+        }
+
+        body[data-theme="light"] .extreme-item.is-peak {
+            border-color: rgba(0, 130, 80, 0.45);
+        }
+        body[data-theme="light"] .extreme-item.is-valley {
+            border-color: rgba(200, 60, 20, 0.45);
         }
 
         /* kicker / story-kicker: yellow pill → amber on light */
