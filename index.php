@@ -998,23 +998,23 @@ $seriesData = [
             color: var(--muted);
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            font-size: 0.72rem;
+            font-size: 0.82rem;
         }
 
         .decision-day strong {
-            font-size: 0.9rem;
+            font-size: 1rem;
             line-height: 1.3;
         }
 
         .decision-day p {
             margin: 0;
             color: var(--muted);
-            font-size: 0.82rem;
+            font-size: 0.92rem;
             line-height: 1.5;
         }
 
         .decision-day .decision-action {
-            font-size: 0.78rem;
+            font-size: 0.88rem;
             color: #ffe7a8;
             white-space: nowrap;
         }
