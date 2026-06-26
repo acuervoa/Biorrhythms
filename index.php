@@ -157,6 +157,30 @@ if ($compatPresetInput !== 'custom') {
 $apiUrl = '/api/?' . http_build_query($apiLinkParams + ['pretty' => '1'], '', '&', PHP_QUERY_RFC3986);
 $apiSnippet = 'curl -s "' . $apiUrl . '" | jq';
 
+// Compute extreme days (avg ≥ +95% or ≤ -95%) from focus date to end of biorhythm cycle (~58y)
+$extremeDays = [];
+$lcm = 21252; // LCM(23, 28, 33)
+$daysFromBirthToFocus = (int) round(daysBetween($birthDate, $focusDate));
+$remainingDays = $lcm - $daysFromBirthToFocus;
+for ($d = 0; $d <= $remainingDays; $d++) {
+    $total = $daysFromBirthToFocus + $d;
+    $p = $bio->calculatePhysical($total);
+    $e = $bio->calculateEmotional($total);
+    $i = $bio->calculateIntellectual($total);
+    $avg = ($p + $e + $i) / 3;
+    if ($avg >= 0.95 || $avg <= -0.95) {
+        $date = $focusDate->modify(($d >= 0 ? '+' : '') . $d . ' day');
+        $extremeDays[] = [
+            'date'        => $date->format('Y-m-d'),
+            'label'       => $date->format('D j M Y'),
+            'avg'         => round($avg * 100, 1),
+            'physical'    => round($p * 100, 1),
+            'emotional'   => round($e * 100, 1),
+            'intellectual' => round($i * 100, 1),
+        ];
+    }
+}
+
 $seriesData = [
     'windowRadius' => $windowRadius,
     'window' => $window,
@@ -168,6 +192,7 @@ $seriesData = [
     'partnerBirthInput' => $partnerBirthInput,
     'compatPresetInput' => $compatPresetInput,
     'focusCompatibility' => $focusCompatibility,
+    'extremeDays' => $extremeDays,
 ];
 ?>
 <!doctype html>
@@ -1788,6 +1813,77 @@ $seriesData = [
         .event-chip.is-zero   { border-color: rgba(125,211,252,0.2); color: var(--muted); }
         .event-chip.is-today  { outline: 1px solid rgba(248,201,93,0.5); }
 
+        .extreme-card {
+            padding: 20px 22px;
+        }
+
+        .extreme-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .extreme-head h2 { margin: 0; font-size: 1.1rem; }
+        .extreme-head p  { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+        .extreme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .extreme-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .extreme-item.is-peak {
+            border-color: rgba(110,231,183,0.2);
+            background: rgba(110,231,183,0.04);
+        }
+
+        .extreme-item.is-valley {
+            border-color: rgba(255,123,84,0.2);
+            background: rgba(255,100,84,0.04);
+        }
+
+        .extreme-item-score {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .extreme-item.is-peak   .extreme-item-score { color: var(--emotional); }
+        .extreme-item.is-valley .extreme-item-score { color: var(--physical); }
+
+        .extreme-item-date {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .extreme-item-rhythms {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 2px;
+        }
+
+        .extreme-item-rhythm {
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--muted);
+        }
+
         .compat-head {
             display: flex;
             flex-wrap: wrap;
@@ -2227,6 +2323,17 @@ $seriesData = [
                 <div class="status-pill" id="eventsPill">—</div>
             </div>
             <div class="events-list" id="eventsList"></div>
+        </section>
+
+        <section class="section card extreme-card">
+            <div class="extreme-head">
+                <div>
+                    <h2>Días extremos</h2>
+                    <p>Días futuros con media superior al +95% o inferior al −95%.</p>
+                </div>
+                <div class="status-pill" id="extremePill">—</div>
+            </div>
+            <div class="extreme-grid" id="extremeGrid"></div>
         </section>
 
         <section class="section card compat-card">
@@ -3353,6 +3460,39 @@ $seriesData = [
             eventsPill.textContent = `${totalEvents} eventos`;
         }
 
+        function buildExtremeDays() {
+            const grid = document.getElementById('extremeGrid');
+            const pill = document.getElementById('extremePill');
+            const days = data.extremeDays ?? [];
+
+            pill.textContent = `${days.length} días`;
+            grid.innerHTML = '';
+
+            if (days.length === 0) {
+                grid.innerHTML = '<p style="color:var(--muted);font-size:0.88rem">Sin días extremos en el ciclo restante.</p>';
+                return;
+            }
+
+            days.forEach(({ label, avg, physical, emotional, intellectual }) => {
+                const isPeak = avg > 0;
+                const cls = isPeak ? 'is-peak' : 'is-valley';
+                const scoreTxt = `${avg > 0 ? '+' : ''}${avg}%`;
+
+                const el = document.createElement('div');
+                el.className = `extreme-item ${cls}`;
+                el.innerHTML = `
+                    <div class="extreme-item-score">${scoreTxt}</div>
+                    <div class="extreme-item-date">${label}</div>
+                    <div class="extreme-item-rhythms">
+                        <span class="extreme-item-rhythm" style="color:var(--physical)">F ${physical > 0 ? '+' : ''}${physical}%</span>
+                        <span class="extreme-item-rhythm" style="color:var(--emotional)">E ${emotional > 0 ? '+' : ''}${emotional}%</span>
+                        <span class="extreme-item-rhythm" style="color:var(--intellectual)">I ${intellectual > 0 ? '+' : ''}${intellectual}%</span>
+                    </div>
+                `;
+                grid.appendChild(el);
+            });
+        }
+
         function updateForecast(index) {
             updateDecisionAssistant(index);
             updateRitual(index);
@@ -3879,6 +4019,7 @@ $seriesData = [
 
         setZoom(91);
         buildSpecialEvents();
+        buildExtremeDays();
         updateWidgetChart();
         applyTheme(theme);
         updateWidgetEmbedSnippet();
