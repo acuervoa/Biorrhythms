@@ -227,10 +227,15 @@ $seriesData = [
 
         body[data-theme="light"] .card {
             box-shadow: 0 4px 24px rgba(17, 24, 39, 0.10);
-            border-color: rgba(16, 24, 40, 0.12);
+            border-color: rgba(16, 24, 40, 0.14);
         }
 
-        /* Light theme: fix all white-tinted surfaces to dark-tinted */
+        /* Light theme: muted text contrast */
+        body[data-theme="light"] {
+            --muted: #3d5168;
+        }
+
+        /* Fix all white-tinted surfaces → dark-tinted */
         body[data-theme="light"] .detail,
         body[data-theme="light"] .stat,
         body[data-theme="light"] .hero-stat,
@@ -245,44 +250,91 @@ $seriesData = [
         body[data-theme="light"] .api-panel,
         body[data-theme="light"] .controls-bar label,
         body[data-theme="light"] .share-metric,
-        body[data-theme="light"] .story-slide,
         body[data-theme="light"] .forecast-day,
         body[data-theme="light"] .widget-chart-shell {
             background: rgba(0, 0, 0, 0.05);
             border-color: rgba(0, 0, 0, 0.12);
         }
 
+        /* story-stat: hardcoded dark bg must flip to light */
+        body[data-theme="light"] .story-stat {
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        /* story-slide: no background needed on light */
+        body[data-theme="light"] .story-slide {
+            background: transparent;
+        }
+
+        /* zoom buttons */
+        body[data-theme="light"] .zoom-btn {
+            border-color: rgba(0, 0, 0, 0.14);
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        body[data-theme="light"] .zoom-btn.is-active {
+            background: rgba(180, 110, 0, 0.12);
+            border-color: rgba(180, 110, 0, 0.4);
+            color: #7a4800;
+        }
+
+        /* secondary buttons */
+        body[data-theme="light"] .secondary-btn {
+            border-color: rgba(0, 0, 0, 0.18);
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        body[data-theme="light"] .secondary-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        /* widget note */
         body[data-theme="light"] .widget-note {
             background: rgba(199, 136, 39, 0.10);
             border-color: rgba(199, 136, 39, 0.25);
         }
 
-        /* Muted text needs more contrast on light */
-        body[data-theme="light"] {
-            --muted: #3d5168;
-        }
-
-        /* Chart grid lines */
+        /* Chart SVG elements */
         body[data-theme="light"] .chart-grid line,
         body[data-theme="light"] .chart-zero {
             stroke: rgba(0, 0, 0, 0.12);
         }
 
-        /* Inputs in light mode */
+        body[data-theme="light"] .marker {
+            stroke: rgba(0, 0, 0, 0.25);
+        }
+
+        body[data-theme="light"] .marker-label {
+            fill: rgba(0, 0, 0, 0.6);
+        }
+
+        /* Inputs & textareas */
         body[data-theme="light"] input[type="date"],
-        body[data-theme="light"] textarea,
-        body[data-theme="light"] .widget-code textarea {
+        body[data-theme="light"] textarea {
             background: rgba(0, 0, 0, 0.04);
             border-color: rgba(0, 0, 0, 0.15);
             color: #18202b;
         }
 
-        /* Snippet/API textarea */
+        /* API/snippet code areas */
         body[data-theme="light"] .api-snippet,
         body[data-theme="light"] .api-snippet textarea,
         body[data-theme="light"] .widget-code textarea {
             background: rgba(0, 0, 0, 0.06);
             border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        /* API JSON preview */
+        body[data-theme="light"] .api-preview {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.14);
+            color: #1e2d3d;
+        }
+
+        body[data-theme="light"] .api-preview-toggle {
+            border-color: rgba(0, 0, 0, 0.14);
+            background: rgba(0, 0, 0, 0.04);
         }
 
         /* Compat bars */
@@ -294,6 +346,38 @@ $seriesData = [
         body[data-theme="light"] .status-pill {
             background: rgba(0, 0, 0, 0.08);
             color: #18202b;
+            border-color: rgba(0, 0, 0, 0.14);
+        }
+
+        /* Hero chip buttons */
+        body[data-theme="light"] .hero-chip,
+        body[data-theme="light"] .event-chip,
+        body[data-theme="light"] .chip {
+            border-color: rgba(0, 0, 0, 0.15);
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* kicker / story-kicker: yellow pill → amber on light */
+        body[data-theme="light"] .kicker,
+        body[data-theme="light"] .story-kicker {
+            background: rgba(160, 90, 0, 0.10);
+            border-color: rgba(160, 90, 0, 0.28);
+            color: #7a4800;
+        }
+
+        /* hero-callout summary arrow + text */
+        body[data-theme="light"] .hero-callout summary {
+            color: #7a4800;
+        }
+
+        body[data-theme="light"] .hero-callout {
+            background: linear-gradient(135deg, rgba(160,90,0,0.07), rgba(0,80,140,0.04)), rgba(0,0,0,0.03);
+            border-color: rgba(160, 90, 0, 0.18);
+        }
+
+        /* hero-chip strong label (normally #ffe7a8) */
+        body[data-theme="light"] .hero-chip strong {
+            color: #7a4800;
         }
 
         .hero-main,
