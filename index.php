@@ -177,7 +177,7 @@ $seriesData = [
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Biorrhythms Demo</title>
+    <title>Biorrhythms</title>
     <style>
         :root {
             --bg: #07111f;
@@ -1922,22 +1922,22 @@ $seriesData = [
         <section class="hero">
             <article class="card hero-main">
                 <div class="hero-topline">
-                    <div class="kicker">Biorrhythms demo</div>
+                    <div class="kicker">Biorrhythms</div>
                     <button id="themeToggleBtn" type="button" class="theme-toggle">Tema claro</button>
                 </div>
                 <div class="hero-body">
                     <div class="hero-text">
                         <h1>Un ciclo simple, convertido en un tablero vivo.</h1>
                         <p class="lead">
-                            Esta demo muestra tus tres ritmos como una escena visual: curvas, foco del día y una ventana de 90 días
+                            Tus tres ritmos como una escena visual: curvas, foco del día y una ventana de 90 días
                             para explorar picos, valles y simetrías sin instalar nada en la máquina.
                         </p>
                         <details class="hero-callout">
-                            <summary>Qué hace esta demo</summary>
+                            <summary>Qué hace esta app</summary>
                             <div class="hero-chips" aria-label="Resumen del producto">
                                 <span class="hero-chip"><strong>Local</strong> Docker + PHP sin instalar nada</span>
                                 <span class="hero-chip"><strong>Shareable</strong> URL con estado persistente</span>
-                                <span class="hero-chip"><strong>Export</strong> PNG listo para demo</span>
+                                <span class="hero-chip"><strong>Export</strong> PNG listo para compartir</span>
                             </div>
                             <p>
                                 Convierte una librería mínima en una experiencia visual: lectura individual, compatibilidad entre personas
@@ -2160,7 +2160,7 @@ $seriesData = [
             <div class="story-head">
                 <div>
                     <h2>Story mode</h2>
-                    <p>La demo se narra como una secuencia de escenas, no solo como números.</p>
+                    <p>La lectura se narra como una secuencia de escenas, no solo como números.</p>
                 </div>
                 <div class="status-pill" id="storyProgress">Escena 1 / 4</div>
             </div>
@@ -2227,7 +2227,7 @@ $seriesData = [
                     <button id="copyLinkBtn" type="button" class="secondary-btn">Copiar enlace</button>
                 </div>
                 <div class="footer-note">
-                    Exporta una tarjeta visual con el pico del día y los tres ritmos. Es la pieza más útil para demos y redes.
+                    Exporta una tarjeta visual con el pico del día y los tres ritmos. Lista para compartir en redes.
                 </div>
             </div>
         </section>
@@ -3539,7 +3539,7 @@ $seriesData = [
 
             ctx.fillStyle = '#ffe7a8';
             ctx.font = '700 18px Arial, sans-serif';
-            ctx.fillText('SIMPLEBRAIN / LOCAL DEMO', 84, 118);
+            ctx.fillText('BIORRHYTHMS', 84, 118);
 
             ctx.fillStyle = '#ffe7a8';
             ctx.font = '700 14px Arial, sans-serif';
@@ -3654,7 +3654,7 @@ $seriesData = [
 
             ctx.fillStyle = '#ecf2ff';
             ctx.font = '700 18px Arial, sans-serif';
-            ctx.fillText('SimpleBrain visual demo', 864, 548);
+            ctx.fillText('Biorrhythms', 864, 548);
             ctx.fillStyle = '#9bb0d0';
             ctx.font = '400 20px Georgia, serif';
             ctx.fillText('Browser-first, local, shareable.', 864, 580);
