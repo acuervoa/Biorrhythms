@@ -39,25 +39,8 @@ function pointCompatibility(array $a, array $b): float
     ) / 3;
 }
 
-function partnerBirthForPreset(string $preset, DateTimeImmutable $focusDate): ?string
-{
-    $shiftDays = [
-        'pair' => 0,
-        'friend' => -42,
-        'work' => 73,
-    ][$preset] ?? null;
-
-    if ($shiftDays === null) {
-        return null;
-    }
-
-    return $focusDate->modify(($shiftDays >= 0 ? '+' : '') . $shiftDays . ' day')->format('Y-m-d');
-}
-
 $birthInput = clampDateInput($_GET['birth'] ?? null, '1990-01-01');
 $focusInput = clampDateInput($_GET['focus'] ?? null, (new DateTimeImmutable('today'))->format('Y-m-d'));
-$compatPresetInput = $_GET['preset'] ?? 'custom';
-$compatPresetInput = in_array($compatPresetInput, ['pair', 'friend', 'work', 'custom'], true) ? $compatPresetInput : 'custom';
 
 $birthDate = new DateTimeImmutable($birthInput);
 $focusDate = new DateTimeImmutable($focusInput);
@@ -279,16 +262,13 @@ $ritual['tags'] = [
 ];
 $ritual['note'] = sprintf('Ritual de 3 pasos para un día con foco en %s.', strtolower($ritualLabels[$ritualDominantKey]));
 
-$demoLinkParams = [
+$appLinkParams = [
     'birth' => $birthInput,
     'focus' => $focusInput,
     'partner_birth' => $partnerBirthInput,
 ];
-if ($compatPresetInput !== 'custom') {
-    $demoLinkParams['preset'] = $compatPresetInput;
-}
 
-$widgetLinkParams = $demoLinkParams + ['embed' => '1'];
+$widgetLinkParams = $appLinkParams + ['embed' => '1'];
 
 $payload = [
     'meta' => [
@@ -296,7 +276,6 @@ $payload = [
         'birth' => $birthInput,
         'focus' => $focusInput,
         'partner_birth' => $partnerBirthInput,
-        'preset' => $compatPresetInput,
         'window_radius' => $windowRadius,
     ],
     'profile' => [
@@ -325,7 +304,7 @@ $payload = [
         'worst_day' => $worstCompatibility,
     ],
     'links' => [
-        'demo' => '/?' . http_build_query($demoLinkParams, '', '&', PHP_QUERY_RFC3986),
+        'app'    => '/?' . http_build_query($appLinkParams, '', '&', PHP_QUERY_RFC3986),
         'widget' => '/?' . http_build_query($widgetLinkParams, '', '&', PHP_QUERY_RFC3986),
     ],
 ];
