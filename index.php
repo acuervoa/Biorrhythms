@@ -268,6 +268,10 @@ $seriesData = [
         }
 
         /* zoom buttons */
+        body[data-theme="light"] .decision-day .decision-action {
+            color: #7a4800;
+        }
+
         body[data-theme="light"] .zoom-btn {
             border-color: rgba(0, 0, 0, 0.14);
             background: rgba(0, 0, 0, 0.04);
