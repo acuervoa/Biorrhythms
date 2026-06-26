@@ -290,9 +290,11 @@ $seriesData = [
         }
 
         /* widget note */
-        body[data-theme="light"] .widget-note {
+        body[data-theme="light"] .widget-note,
+        body[data-theme="light"] .ritual-note {
             background: rgba(199, 136, 39, 0.10);
             border-color: rgba(199, 136, 39, 0.25);
+            color: #7a4800;
         }
 
         /* Chart SVG grid lines */
@@ -347,9 +349,9 @@ $seriesData = [
 
         /* Status pills */
         body[data-theme="light"] .status-pill {
-            background: rgba(0, 0, 0, 0.08);
-            color: #18202b;
-            border-color: rgba(0, 0, 0, 0.14);
+            background: rgba(0, 120, 70, 0.08);
+            border-color: rgba(0, 120, 70, 0.22);
+            color: #005030;
         }
 
         /* Hero chip buttons */
