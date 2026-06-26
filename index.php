@@ -534,6 +534,61 @@ $seriesData = [
             position: relative;
         }
 
+        .zoom-btns {
+            display: flex;
+            gap: 4px;
+        }
+
+        .zoom-btn {
+            padding: 5px 11px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+            color: var(--muted);
+            font: inherit;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.04em;
+        }
+
+        .zoom-btn.is-active {
+            background: rgba(248,201,93,0.14);
+            border-color: rgba(248,201,93,0.35);
+            color: #ffe7a8;
+        }
+
+        .hero-forecast-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .hero-forecast-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .hero-forecast-chip strong {
+            color: var(--text);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .hero-forecast-chip.is-best { border-color: rgba(110,231,183,0.25); }
+        .hero-forecast-chip.is-best strong { color: var(--emotional); }
+        .hero-forecast-chip.is-worst { border-color: rgba(255,123,84,0.25); }
+        .hero-forecast-chip.is-worst strong { color: var(--physical); }
+
         .panel-head {
             display: flex;
             flex-wrap: wrap;
@@ -1976,6 +2031,7 @@ $seriesData = [
                             </p>
                         </details>
                     </div>
+                    <div class="hero-forecast-chips" id="heroForecastChips" aria-live="polite"></div>
                     <div class="hero-stats-inline">
                         <div class="stat">
                             <small>Físico</small>
@@ -2029,7 +2085,13 @@ $seriesData = [
                     <h2>Timeline viva</h2>
                     <p>La línea central es cero. Arriba es energía positiva; abajo, fase baja.</p>
                 </div>
-                <div class="button-row" style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div class="button-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <div class="zoom-btns">
+                        <button type="button" class="zoom-btn" data-zoom="7">1S</button>
+                        <button type="button" class="zoom-btn" data-zoom="30">30D</button>
+                        <button type="button" class="zoom-btn" data-zoom="60">60D</button>
+                        <button type="button" class="zoom-btn is-active" data-zoom="91">90D</button>
+                    </div>
                     <button id="exportPngBtn" type="button">Exportar PNG</button>
                     <button id="jumpToTodayBtn" type="button" class="secondary-btn">Volver al día foco</button>
                 </div>
@@ -2122,22 +2184,6 @@ $seriesData = [
                     <div class="compat-footer" id="compatFooter"></div>
                 </div>
             </div>
-        </section>
-
-        <section class="section card forecast-card">
-            <div class="forecast-head">
-                <div>
-                    <h2>Forecast 7 días</h2>
-                    <p id="forecastSubtitle">Ventana dinámica alrededor del día seleccionado.</p>
-                </div>
-                <div class="status-pill" id="forecastInsightPill">Listo para explorar</div>
-            </div>
-            <svg class="forecast-spark" id="forecastSpark" viewBox="0 0 1100 120" role="img" aria-label="Sparkline de forecast">
-                <g id="forecastSparkGrid"></g>
-                <g id="forecastSparkPaths"></g>
-            </svg>
-            <div class="forecast-strip" id="forecastStrip"></div>
-            <div class="forecast-insight" id="forecastInsight"></div>
         </section>
 
         <section class="section card decision-card">
@@ -2393,12 +2439,11 @@ $seriesData = [
         const copySummaryBtn = document.getElementById('copySummaryBtn');
         const copyLinkBtn = document.getElementById('copyLinkBtn');
         const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const forecastStrip = document.getElementById('forecastStrip');
-        const forecastInsight = document.getElementById('forecastInsight');
-        const forecastSubtitle = document.getElementById('forecastSubtitle');
-        const forecastInsightPill = document.getElementById('forecastInsightPill');
-        const forecastSparkGrid = document.getElementById('forecastSparkGrid');
-        const forecastSparkPaths = document.getElementById('forecastSparkPaths');
+        const heroForecastChips = document.getElementById('heroForecastChips');
+        const zoomButtons = document.querySelectorAll('.zoom-btn');
+
+        let visibleWindow = data.window;
+        let visibleStartIndex = 0;
         const decisionBadge = document.getElementById('decisionBadge');
         const decisionAction = document.getElementById('decisionAction');
         const decisionWhy = document.getElementById('decisionWhy');
@@ -2469,8 +2514,8 @@ $seriesData = [
             return centerY - value * (innerHeight / 2 - 10);
         }
 
-        function xFor(index) {
-            return padding.left + (index / (data.window.length - 1)) * innerWidth;
+        function xFor(visibleIndex) {
+            return padding.left + (visibleIndex / Math.max(1, visibleWindow.length - 1)) * innerWidth;
         }
 
         function make(tag, attrs = {}) {
@@ -2482,8 +2527,8 @@ $seriesData = [
         }
 
         function buildPath(seriesName) {
-            return data.window
-                .map((point, index) => `${index === 0 ? 'M' : 'L'} ${xFor(index).toFixed(2)} ${yFor(point[seriesName]).toFixed(2)}`)
+            return visibleWindow
+                .map((point, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i).toFixed(2)} ${yFor(point[seriesName]).toFixed(2)}`)
                 .join(' ');
         }
 
@@ -2501,22 +2546,25 @@ $seriesData = [
                 }));
             });
 
-            const marker = make('line', {
-                x1: xFor(data.selectedIndex),
-                x2: xFor(data.selectedIndex),
-                y1: padding.top - 4,
-                y2: height - padding.bottom + 8,
-                class: 'marker',
-            });
-            markersGroup.appendChild(marker);
+            const markerVi = data.selectedIndex - visibleStartIndex;
+            if (markerVi >= 0 && markerVi < visibleWindow.length) {
+                const marker = make('line', {
+                    x1: xFor(markerVi),
+                    x2: xFor(markerVi),
+                    y1: padding.top - 4,
+                    y2: height - padding.bottom + 8,
+                    class: 'marker',
+                });
+                markersGroup.appendChild(marker);
 
-            const label = make('text', {
-                x: xFor(data.selectedIndex) + 10,
-                y: padding.top + 12,
-                class: 'marker-label',
-            });
-            label.textContent = 'Hoy';
-            markersGroup.appendChild(label);
+                const label = make('text', {
+                    x: xFor(markerVi) + 10,
+                    y: padding.top + 12,
+                    class: 'marker-label',
+                });
+                label.textContent = 'Hoy';
+                markersGroup.appendChild(label);
+            }
         }
 
         function buildPaths() {
@@ -2961,6 +3009,11 @@ $seriesData = [
                 decisionCalendar.appendChild(buildDecisionDayCard(point, point.date === best.date, point.date === worst.date));
             });
 
+            heroForecastChips.innerHTML = `
+                <span class="hero-forecast-chip is-best"><strong>Mejor</strong> ${best.label} · ${Math.round(best.score * 100)}%</span>
+                <span class="hero-forecast-chip is-worst"><strong>Valle</strong> ${worst.label} · ${Math.round(worst.score * 100)}%</span>
+            `;
+
             if (best.date === data.window[index].date) {
                 decisionBadge.textContent = `${current.badge} · mejor día`;
             } else {
@@ -3151,77 +3204,7 @@ $seriesData = [
             return card;
         }
 
-        function buildSparklinePath(points, seriesName, widthPx, heightPx, paddingPx) {
-            const innerWidthPx = widthPx - paddingPx * 2;
-            const innerHeightPx = heightPx - paddingPx * 2;
-            const center = paddingPx + innerHeightPx / 2;
-
-            return points
-                .map((point, index) => {
-                    const x = paddingPx + (index / Math.max(1, points.length - 1)) * innerWidthPx;
-                    const y = center - point[seriesName] * (innerHeightPx / 2 - 8);
-                    return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-                })
-                .join(' ');
-        }
-
-        function updateForecastSpark(points) {
-            const widthPx = 1100;
-            const heightPx = 120;
-            const paddingPx = 14;
-            const gridLines = [-1, 0, 1]
-                .map((value) => {
-                    const y = paddingPx + (heightPx - paddingPx * 2) / 2 - value * ((heightPx - paddingPx * 2) / 2 - 8);
-                    return `<line x1="${paddingPx}" x2="${widthPx - paddingPx}" y1="${y}" y2="${y}" class="${value === 0 ? 'spark-zero' : 'spark-grid'}"></line>`;
-                })
-                .join('');
-
-            forecastSparkGrid.innerHTML = gridLines;
-            forecastSparkPaths.innerHTML = `
-                <path class="physical" d="${buildSparklinePath(points, 'physical', widthPx, heightPx, paddingPx)}"></path>
-                <path class="emotional" d="${buildSparklinePath(points, 'emotional', widthPx, heightPx, paddingPx)}"></path>
-                <path class="intellectual" d="${buildSparklinePath(points, 'intellectual', widthPx, heightPx, paddingPx)}"></path>
-            `;
-
-            requestAnimationFrame(() => {
-                forecastSparkPaths.querySelectorAll('path').forEach((path) => {
-                    const length = path.getTotalLength();
-                    path.style.strokeDasharray = `${length}`;
-                    path.style.strokeDashoffset = `${length}`;
-                    path.style.transition = 'stroke-dashoffset 900ms ease';
-                    requestAnimationFrame(() => {
-                        path.style.strokeDashoffset = '0';
-                    });
-                });
-            });
-        }
-
         function updateForecast(index) {
-            const forecastWindow = forecastSliceFrom(index);
-            const scored = forecastWindow.map((point) => ({
-                ...point,
-                score: (point.physical + point.emotional + point.intellectual) / 3,
-            }));
-            const best = scored.reduce((carry, point) => (point.score > carry.score ? point : carry), scored[0]);
-            const worst = scored.reduce((carry, point) => (point.score < carry.score ? point : carry), scored[0]);
-            const lead = scored[0];
-
-            forecastStrip.innerHTML = '';
-            scored.forEach((point) => {
-                forecastStrip.appendChild(buildDayForecastCard(point, point.date === best.date, point.date === worst.date));
-            });
-
-            const narrative =
-                best.score >= 0.45
-                    ? `Ventana favorable: el mejor impulso cae en ${best.label} con una media de ${(best.score * 100).toFixed(1)}%.`
-                    : worst.score <= -0.35
-                        ? `Periodo de recuperación: ${worst.label} marca el punto más bajo con ${(worst.score * 100).toFixed(1)}%.`
-                        : `Semana equilibrada: ningún extremo domina, así que el foco está en mantener ritmo y evitar sobrecargas.`;
-
-            forecastSubtitle.textContent = `Desde ${lead.label} hasta ${scored[scored.length - 1].label}`;
-            forecastInsight.textContent = narrative;
-            forecastInsightPill.textContent = `${best.label} mejor día`;
-            updateForecastSpark(scored);
             updateDecisionAssistant(index);
             updateRitual(index);
             updateStoryMode(index);
@@ -3736,6 +3719,27 @@ $seriesData = [
             ].join('\n');
             await navigator.clipboard.writeText(summary);
         }
+
+        function setZoom(days) {
+            const total = data.window.length;
+            const half = Math.floor(Math.min(days, total) / 2);
+            const center = data.selectedIndex;
+            visibleStartIndex = Math.max(0, Math.min(center - half, total - days));
+            const end = Math.min(visibleStartIndex + Math.min(days, total), total);
+            visibleWindow = data.window.slice(visibleStartIndex, end);
+
+            zoomButtons.forEach((btn) => {
+                btn.classList.toggle('is-active', Number(btn.dataset.zoom) === days);
+            });
+
+            markersGroup.innerHTML = '';
+            buildGrid();
+            buildPaths();
+        }
+
+        zoomButtons.forEach((btn) => {
+            btn.addEventListener('click', () => setZoom(Number(btn.dataset.zoom)));
+        });
 
         buildGrid();
         buildPaths();
