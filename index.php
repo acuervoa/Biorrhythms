@@ -2129,6 +2129,81 @@ $seriesData = [
                 grid-template-columns: 1fr;
             }
         }
+
+        @media (max-width: 600px) {
+            .shell {
+                padding: 12px 10px;
+                gap: 12px;
+            }
+
+            .hero-body {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .hero-right {
+                flex: unset;
+                width: 100%;
+            }
+
+            .hero-stats-inline {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .hero-forecast-chips {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .zoom-btns {
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .compat-strip {
+                overflow-x: auto;
+                grid-template-columns: repeat(7, minmax(100px, 1fr));
+                padding-bottom: 8px;
+            }
+
+            .compat-heatmap-grid {
+                overflow-x: auto;
+                grid-template-columns: repeat(7, minmax(90px, 1fr));
+                padding-bottom: 8px;
+            }
+
+            .extreme-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .event-row {
+                grid-template-columns: 80px 1fr;
+                gap: 10px;
+                padding: 10px 12px;
+            }
+
+            .event-chips-row {
+                gap: 5px;
+            }
+
+            .event-chip {
+                padding: 4px 8px;
+                font-size: 0.74rem;
+            }
+
+            h1 { font-size: 1.5rem; }
+
+            .stat strong { font-size: 1.3rem; }
+
+            .compat-score { font-size: 2.2rem; }
+        }
     </style>
 </head>
 <body<?= $embedMode ? ' class="embed-view" data-theme="' . htmlspecialchars($widgetTheme, ENT_QUOTES) . '"' : '' ?>>
