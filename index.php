@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/src/Biorrhythms.php';
+require_once __DIR__ . '/src/Compatibility.php';
+require_once __DIR__ . '/src/ExtremeDays.php';
 
 use Biorrhythms\Biorrhythms;
+use Biorrhythms\Compatibility;
+use Biorrhythms\ExtremeDays;
 
 function clampDateInput(?string $value, string $fallback): string
 {
@@ -37,34 +41,6 @@ function valueToSignedPercent(float $value): string
     return $sign . number_format($value * 100, 1, '.', '') . '%';
 }
 
-function compatibilityScore(float $a, float $b): float
-{
-    return max(0.0, 1 - abs($a - $b) / 2);
-}
-
-function pointCompatibility(array $a, array $b): float
-{
-    return (
-        compatibilityScore($a['physical'], $b['physical']) +
-        compatibilityScore($a['emotional'], $b['emotional']) +
-        compatibilityScore($a['intellectual'], $b['intellectual'])
-    ) / 3;
-}
-
-function partnerBirthForPreset(string $preset, DateTimeImmutable $focusDate): ?string
-{
-    $shiftDays = [
-        'pair' => 0,
-        'friend' => -42,
-        'work' => 73,
-    ][$preset] ?? null;
-
-    if ($shiftDays === null) {
-        return null;
-    }
-
-    return $focusDate->modify(($shiftDays >= 0 ? '+' : '') . $shiftDays . ' day')->format('Y-m-d');
-}
 
 $birthInput = clampDateInput($_GET['birth'] ?? null, '1990-01-01');
 $focusInput = clampDateInput($_GET['focus'] ?? null, (new DateTimeImmutable('today'))->format('Y-m-d'));
@@ -128,7 +104,7 @@ $focusSummary = sprintf(
     valueToPercent($focusValues['intellectual'])
 );
 
-$focusCompatibility = pointCompatibility($focusValues, $partnerFocusValues);
+$focusCompatibility = Compatibility::pointScore($focusValues, $partnerFocusValues);
 
 $widgetUrlParams = [
     'birth' => $birthInput,
@@ -157,29 +133,7 @@ if ($compatPresetInput !== 'custom') {
 $apiUrl = '/api/?' . http_build_query($apiLinkParams + ['pretty' => '1'], '', '&', PHP_QUERY_RFC3986);
 $apiSnippet = 'curl -s "' . $apiUrl . '" | jq';
 
-// Compute extreme days (avg ≥ +95% or ≤ -95%) from focus date to end of biorhythm cycle (~58y)
-$extremeDays = [];
-$lcm = 21252; // LCM(23, 28, 33)
-$daysFromBirthToFocus = (int) round(daysBetween($birthDate, $focusDate));
-$remainingDays = $lcm - $daysFromBirthToFocus;
-for ($d = 0; $d <= $remainingDays; $d++) {
-    $total = $daysFromBirthToFocus + $d;
-    $p = $bio->calculatePhysical($total);
-    $e = $bio->calculateEmotional($total);
-    $i = $bio->calculateIntellectual($total);
-    $avg = ($p + $e + $i) / 3;
-    if ($avg >= 0.95 || $avg <= -0.95) {
-        $date = $focusDate->modify(($d >= 0 ? '+' : '') . $d . ' day');
-        $extremeDays[] = [
-            'date'        => $date->format('Y-m-d'),
-            'label'       => $date->format('D j M Y'),
-            'avg'         => round($avg * 100, 1),
-            'physical'    => round($p * 100, 1),
-            'emotional'   => round($e * 100, 1),
-            'intellectual' => round($i * 100, 1),
-        ];
-    }
-}
+$extremeDays = ExtremeDays::find($bio, $birthDate, $focusDate);
 
 $seriesData = [
     'windowRadius' => $windowRadius,

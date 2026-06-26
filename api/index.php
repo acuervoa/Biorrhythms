@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/Biorrhythms.php';
+require_once __DIR__ . '/../src/Compatibility.php';
 
 use Biorrhythms\Biorrhythms;
+use Biorrhythms\Compatibility;
 
 function clampDateInput(?string $value, string $fallback): string
 {
@@ -23,20 +25,6 @@ function clampDateInput(?string $value, string $fallback): string
 function daysBetween(DateTimeImmutable $from, DateTimeImmutable $to): float
 {
     return ($to->getTimestamp() - $from->getTimestamp()) / 86400;
-}
-
-function compatibilityScore(float $a, float $b): float
-{
-    return max(0.0, 1 - abs($a - $b) / 2);
-}
-
-function pointCompatibility(array $a, array $b): float
-{
-    return (
-        compatibilityScore($a['physical'], $b['physical']) +
-        compatibilityScore($a['emotional'], $b['emotional']) +
-        compatibilityScore($a['intellectual'], $b['intellectual'])
-    ) / 3;
 }
 
 $birthInput = clampDateInput($_GET['birth'] ?? null, '1990-01-01');
@@ -106,15 +94,15 @@ $compatibilityForecast = array_map(static function (array $point) use ($partnerB
     $rhythms = [
         [
             'label' => 'Físico',
-            'value' => compatibilityScore($bio->calculatePhysical($daysA), $bio->calculatePhysical($daysB)),
+            'value' => Compatibility::score($bio->calculatePhysical($daysA), $bio->calculatePhysical($daysB)),
         ],
         [
             'label' => 'Emocional',
-            'value' => compatibilityScore($bio->calculateEmotional($daysA), $bio->calculateEmotional($daysB)),
+            'value' => Compatibility::score($bio->calculateEmotional($daysA), $bio->calculateEmotional($daysB)),
         ],
         [
             'label' => 'Intelectual',
-            'value' => compatibilityScore($bio->calculateIntellectual($daysA), $bio->calculateIntellectual($daysB)),
+            'value' => Compatibility::score($bio->calculateIntellectual($daysA), $bio->calculateIntellectual($daysB)),
         ],
     ];
 
@@ -295,9 +283,9 @@ $payload = [
     'compatibility' => [
         'score' => pointCompatibility($focusValues, $partnerFocusValues),
         'current' => [
-            'physical' => compatibilityScore($focusValues['physical'], $partnerFocusValues['physical']),
-            'emotional' => compatibilityScore($focusValues['emotional'], $partnerFocusValues['emotional']),
-            'intellectual' => compatibilityScore($focusValues['intellectual'], $partnerFocusValues['intellectual']),
+            'physical' => Compatibility::score($focusValues['physical'], $partnerFocusValues['physical']),
+            'emotional' => Compatibility::score($focusValues['emotional'], $partnerFocusValues['emotional']),
+            'intellectual' => Compatibility::score($focusValues['intellectual'], $partnerFocusValues['intellectual']),
         ],
         'forecast' => $compatibilityForecast,
         'best_day' => $bestCompatibility,
