@@ -2097,7 +2097,7 @@ $seriesData = [
             inset: 0 auto 0 0;
             width: 50%;
             border-radius: inherit;
-            background: linear-gradient(90deg, #f8c95d, #ffb36f);
+            background: var(--physical);
         }
 
         .compat-day.is-best {
@@ -3359,12 +3359,18 @@ $seriesData = [
                 <strong>${point.label}</strong>
                 <span>${Math.round(result.score * 100)}% match</span>
                 <div class="compat-meter">
-                    ${result.rhythms.map((rhythm) => `
+                    ${result.rhythms.map((rhythm) => {
+                        const color = rhythm.label === 'Físico'
+                            ? 'var(--physical)'
+                            : rhythm.label === 'Emocional'
+                                ? 'var(--emotional)'
+                                : 'var(--intellectual)';
+                        return `
                         <div>
                             <span>${rhythm.label}</span>
-                            <div class="compat-track"><div class="compat-fill" style="width:${Math.max(8, Math.round(rhythm.value * 100))}%"></div></div>
-                        </div>
-                    `).join('')}
+                            <div class="compat-track"><div class="compat-fill" style="width:${Math.max(8, Math.round(rhythm.value * 100))}%;background:${color};"></div></div>
+                        </div>`;
+                    }).join('')}
                 </div>
             `;
 
