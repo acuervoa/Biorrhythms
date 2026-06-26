@@ -1717,6 +1717,75 @@ $seriesData = [
             padding: 20px;
         }
 
+        .events-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .events-head h2 { margin: 0; font-size: 1.1rem; }
+        .events-head p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+        .events-list {
+            display: grid;
+            gap: 6px;
+        }
+
+        .event-row {
+            display: grid;
+            grid-template-columns: 100px 32px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .event-row.is-today {
+            border-color: rgba(248,201,93,0.3);
+            background: rgba(248,201,93,0.05);
+        }
+
+        .event-date {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .event-icon {
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .event-desc {
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        .event-desc strong {
+            display: block;
+            font-size: 0.92rem;
+        }
+
+        .event-desc small {
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .event-score {
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .event-score.is-peak { color: var(--emotional); }
+        .event-score.is-valley { color: var(--physical); }
+        .event-score.is-zero { color: var(--muted); }
+
         .compat-head {
             display: flex;
             flex-wrap: wrap;
@@ -2145,6 +2214,17 @@ $seriesData = [
                 <strong id="detail-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
                 <em>Lectura instantánea</em>
             </article>
+        </section>
+
+        <section class="section card events-card">
+            <div class="events-head">
+                <div>
+                    <h2>Días especiales</h2>
+                    <p>Picos, valles y cruces de cero en la ventana de 90 días.</p>
+                </div>
+                <div class="status-pill" id="eventsPill">—</div>
+            </div>
+            <div class="events-list" id="eventsList"></div>
         </section>
 
         <section class="section card compat-card">
@@ -3220,6 +3300,70 @@ $seriesData = [
             return card;
         }
 
+        const eventsList = document.getElementById('eventsList');
+        const eventsPill = document.getElementById('eventsPill');
+
+        function buildSpecialEvents() {
+            const SERIES = ['physical', 'emotional', 'intellectual'];
+            const LABELS = { physical: 'Físico', emotional: 'Emocional', intellectual: 'Intelectual' };
+            const avg = (p) => (p.physical + p.emotional + p.intellectual) / 3;
+            const w = data.window;
+            const events = [];
+
+            for (let i = 1; i < w.length - 1; i++) {
+                const prev = avg(w[i - 1]);
+                const cur  = avg(w[i]);
+                const next = avg(w[i + 1]);
+                const isToday = w[i].date === data.window[data.selectedIndex].date;
+
+                // local max
+                if (cur > prev && cur > next && cur > 0.35) {
+                    const rhythms = SERIES.filter((s) => w[i][s] > 0.7).map((s) => LABELS[s]);
+                    events.push({ point: w[i], type: 'peak', score: cur, rhythms, isToday });
+                }
+                // local min
+                else if (cur < prev && cur < next && cur < -0.35) {
+                    const rhythms = SERIES.filter((s) => w[i][s] < -0.7).map((s) => LABELS[s]);
+                    events.push({ point: w[i], type: 'valley', score: cur, rhythms, isToday });
+                }
+                // zero crossing (average changes sign)
+                else if (prev * cur < 0) {
+                    const dir = cur > 0 ? 'subiendo' : 'bajando';
+                    events.push({ point: w[i], type: 'zero', score: cur, dir, isToday });
+                }
+            }
+
+            eventsPill.textContent = `${events.length} eventos`;
+            eventsList.innerHTML = '';
+
+            if (events.length === 0) {
+                eventsList.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;padding:8px 0">Sin eventos destacados en la ventana.</p>';
+                return;
+            }
+
+            events.forEach(({ point, type, score, rhythms, dir, isToday }) => {
+                const row = document.createElement('div');
+                row.className = `event-row${isToday ? ' is-today' : ''}`;
+
+                const icon = type === 'peak' ? '▲' : type === 'valley' ? '▼' : '◆';
+                const label = type === 'peak'
+                    ? `Pico${rhythms?.length ? ' · ' + rhythms.join(', ') : ''}`
+                    : type === 'valley'
+                        ? `Valle${rhythms?.length ? ' · ' + rhythms.join(', ') : ''}`
+                        : `Cruce de cero (${dir})`;
+                const scoreClass = type === 'peak' ? 'is-peak' : type === 'valley' ? 'is-valley' : 'is-zero';
+                const scoreTxt = `${score >= 0 ? '+' : ''}${Math.round(score * 100)}%`;
+
+                row.innerHTML = `
+                    <span class="event-date">${point.label}</span>
+                    <span class="event-icon">${icon}</span>
+                    <div class="event-desc"><strong>${label}</strong><small>offset ${point.offset} días</small></div>
+                    <span class="event-score ${scoreClass}">${scoreTxt}</span>
+                `;
+                eventsList.appendChild(row);
+            });
+        }
+
         function updateForecast(index) {
             updateDecisionAssistant(index);
             updateRitual(index);
@@ -3745,6 +3889,7 @@ $seriesData = [
         });
 
         setZoom(91);
+        buildSpecialEvents();
         updateWidgetChart();
         applyTheme(theme);
         updateWidgetEmbedSnippet();
