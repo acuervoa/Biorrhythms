@@ -1717,6 +1717,10 @@ $seriesData = [
             padding: 20px;
         }
 
+        .events-card {
+            padding: 20px 22px;
+        }
+
         .events-head {
             display: flex;
             flex-wrap: wrap;
