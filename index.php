@@ -75,9 +75,7 @@ $widgetTheme = ($_GET['theme'] ?? 'dark') === 'light' ? 'light' : 'dark';
 
 $birthDate = new DateTimeImmutable($birthInput);
 $focusDate = new DateTimeImmutable($focusInput);
-$partnerBirthInput = $compatPresetInput === 'custom'
-    ? clampDateInput($_GET['partner_birth'] ?? null, '1991-01-01')
-    : (partnerBirthForPreset($compatPresetInput, $focusDate) ?? clampDateInput($_GET['partner_birth'] ?? null, '1991-01-01'));
+$partnerBirthInput = clampDateInput($_GET['partner_birth'] ?? null, '1991-01-01');
 $partnerBirthDate = new DateTimeImmutable($partnerBirthInput);
 $bio = new Biorrhythms();
 
@@ -3218,8 +3216,6 @@ $seriesData = [
         }
 
         function applyCompatibilityPreset(preset) {
-            const normalizedPartnerBirth = normalizePartnerBirthForPreset(preset);
-            partnerBirthInput.value = normalizedPartnerBirth;
             presetInput.value = preset;
             compatPresetButtons.forEach((button) => {
                 button.classList.toggle('is-active', button.dataset.compatPreset === preset);

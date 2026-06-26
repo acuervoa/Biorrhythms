@@ -61,9 +61,7 @@ $compatPresetInput = in_array($compatPresetInput, ['pair', 'friend', 'work', 'cu
 
 $birthDate = new DateTimeImmutable($birthInput);
 $focusDate = new DateTimeImmutable($focusInput);
-$partnerBirthInput = $compatPresetInput === 'custom'
-    ? clampDateInput($_GET['partner_birth'] ?? null, '1991-01-01')
-    : (partnerBirthForPreset($compatPresetInput, $focusDate) ?? clampDateInput($_GET['partner_birth'] ?? null, '1991-01-01'));
+$partnerBirthInput = clampDateInput($_GET['partner_birth'] ?? null, '1991-01-01');
 $partnerBirthDate = new DateTimeImmutable($partnerBirthInput);
 $bio = new Biorrhythms();
 
