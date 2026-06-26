@@ -290,13 +290,18 @@ $seriesData = [
             flex: 1 1 320px;
         }
 
-        .hero-stats-inline {
+        .hero-right {
             flex: 0 0 auto;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .hero-stats-inline {
+            display: flex;
             gap: 10px;
             align-items: stretch;
-            margin-top: 4px;
         }
 
         .controls-bar {
@@ -563,7 +568,6 @@ $seriesData = [
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            flex-basis: 100%;
         }
 
         .hero-forecast-chip {
@@ -2032,21 +2036,23 @@ $seriesData = [
                             </p>
                         </details>
                     </div>
-                    <div class="hero-stats-inline">
-                        <div class="stat">
-                            <small>Físico</small>
-                            <strong id="stat-physical"><?= htmlspecialchars(valueToPercent($selectedPoint['physical'])) ?></strong>
-                            <span>23 días</span>
-                        </div>
-                        <div class="stat">
-                            <small>Emocional</small>
-                            <strong id="stat-emotional"><?= htmlspecialchars(valueToPercent($selectedPoint['emotional'])) ?></strong>
-                            <span>28 días</span>
-                        </div>
-                        <div class="stat">
-                            <small>Intelectual</small>
-                            <strong id="stat-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
-                            <span>33 días</span>
+                    <div class="hero-right">
+                        <div class="hero-stats-inline">
+                            <div class="stat">
+                                <small>Físico</small>
+                                <strong id="stat-physical"><?= htmlspecialchars(valueToPercent($selectedPoint['physical'])) ?></strong>
+                                <span>23 días</span>
+                            </div>
+                            <div class="stat">
+                                <small>Emocional</small>
+                                <strong id="stat-emotional"><?= htmlspecialchars(valueToPercent($selectedPoint['emotional'])) ?></strong>
+                                <span>28 días</span>
+                            </div>
+                            <div class="stat">
+                                <small>Intelectual</small>
+                                <strong id="stat-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
+                                <span>33 días</span>
+                            </div>
                         </div>
                         <div class="hero-forecast-chips" id="heroForecastChips" aria-live="polite"></div>
                     </div>
@@ -2151,24 +2157,14 @@ $seriesData = [
             </div>
             <div class="compat-grid">
                 <div class="compat-score">
-                    <small>Score actual</small>
+                    <small>Score de compatibilidad</small>
                     <strong id="compatScore"><?= htmlspecialchars(number_format($focusCompatibility * 100, 1, '.', '')) ?>%</strong>
                     <p id="compatNarrative">
                         <?= htmlspecialchars('Se calculó una lectura inicial usando ' . $focusInput . ' y ' . $partnerBirthInput . '.') ?>
                     </p>
-                    <div class="compat-presets">
-                        <button type="button" class="secondary-btn<?= $compatPresetInput === 'pair' ? ' is-active' : '' ?>" data-compat-preset="pair">Pareja</button>
-                        <button type="button" class="secondary-btn<?= $compatPresetInput === 'friend' ? ' is-active' : '' ?>" data-compat-preset="friend">Amistad</button>
-                        <button type="button" class="secondary-btn<?= $compatPresetInput === 'work' ? ' is-active' : '' ?>" data-compat-preset="work">Trabajo</button>
-                    </div>
-                    <div class="compat-weighted" id="compatWeighted">
-                        <small>Score contextual</small>
-                        <strong id="compatWeightedScore">—</strong>
-                        <p id="compatPresetNarrative"></p>
-                    </div>
                     <div class="compat-inputs">
                         <label>
-                            Persona 2
+                            Otra persona
                             <input id="partnerBirthInput" type="date" value="<?= htmlspecialchars($partnerBirthInput) ?>">
                         </label>
                     </div>
@@ -2488,9 +2484,6 @@ $seriesData = [
         const compatHeatmap = document.getElementById('compatHeatmap');
         const compatFooter = document.getElementById('compatFooter');
         const compatSummaryPill = document.getElementById('compatSummaryPill');
-        const compatWeighted = document.getElementById('compatWeighted');
-        const compatWeightedScore = document.getElementById('compatWeightedScore');
-        const compatPresetNarrative = document.getElementById('compatPresetNarrative');
         const compatPresetButtons = document.querySelectorAll('[data-compat-preset]');
         const widgetChart = document.getElementById('widgetChart');
         const widgetChartGrid = document.getElementById('widgetChartGrid');
@@ -2771,19 +2764,22 @@ $seriesData = [
             document.getElementById('shareStatus').textContent = `${(point.physical * 100).toFixed(1)}% · ${(point.emotional * 100).toFixed(1)}% · ${(point.intellectual * 100).toFixed(1)}%`;
 
             markersGroup.innerHTML = '';
-            markersGroup.appendChild(make('line', {
-                x1: xFor(index),
-                x2: xFor(index),
-                y1: padding.top - 4,
-                y2: height - padding.bottom + 8,
-                class: 'marker',
-            }));
-            markersGroup.appendChild(make('text', {
-                x: xFor(index) + 10,
-                y: padding.top + 12,
-                class: 'marker-label',
-            }));
-            markersGroup.lastChild.textContent = point.label;
+            const vi = index - visibleStartIndex;
+            if (vi >= 0 && vi < visibleWindow.length) {
+                markersGroup.appendChild(make('line', {
+                    x1: xFor(vi),
+                    x2: xFor(vi),
+                    y1: padding.top - 4,
+                    y2: height - padding.bottom + 8,
+                    class: 'marker',
+                }));
+                markersGroup.appendChild(make('text', {
+                    x: xFor(vi) + 10,
+                    y: padding.top + 12,
+                    class: 'marker-label',
+                }));
+                markersGroup.lastChild.textContent = point.label;
+            }
 
             document.getElementById('selectedLabel').textContent = `${point.label} · offset ${point.offset} días`;
             updateForecast(index);
@@ -3257,16 +3253,6 @@ $seriesData = [
                     : 'Lectura baja: conviene tratar esta ventana como fase de ajuste, no de empuje.';
             compatSummaryPill.textContent = `${Math.round(best.score * 100)}% mejor día`;
 
-            const activePreset = activeCompatibilityPreset();
-            const ws = weightedCompatibilityScore(activePreset, selected.rhythms);
-            if (ws !== null) {
-                compatWeightedScore.textContent = `${Math.round(ws * 100)}%`;
-                compatPresetNarrative.textContent = presetNarrative(activePreset);
-                compatWeighted.classList.add('is-visible');
-            } else {
-                compatWeighted.classList.remove('is-visible');
-            }
-
             compatStrip.innerHTML = '';
             scored.forEach((point) => {
                 const { card } = buildCompatibilityDayCard(point, partnerBirth, point.date === best.date, point.date === worst.date);
@@ -3280,15 +3266,6 @@ $seriesData = [
             });
 
             compatFooter.textContent = `${best.label} marca el mejor ajuste de esta ventana. ${worst.label} es el punto más delicado, con ${Math.round(worst.score * 100)}% de match.`;
-        }
-
-        function applyCompatibilityPreset(preset) {
-            presetInput.value = preset;
-            compatPresetButtons.forEach((button) => {
-                button.classList.toggle('is-active', button.dataset.compatPreset === preset);
-            });
-            updateCompatibility(selectedIndex);
-            syncCompatibilityUrl();
         }
 
         function buildCompatibilityCardSvg() {
@@ -3833,18 +3810,8 @@ $seriesData = [
         });
 
         partnerBirthInput.addEventListener('input', () => {
-            presetInput.value = 'custom';
-            compatPresetButtons.forEach((button) => {
-                button.classList.remove('is-active');
-            });
             updateCompatibility(selectedIndex);
             syncCompatibilityUrl();
-        });
-
-        compatPresetButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                applyCompatibilityPreset(button.dataset.compatPreset);
-            });
         });
 
         exportCompatBtn.addEventListener('click', async () => {
