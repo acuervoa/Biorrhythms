@@ -5,10 +5,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/Biorrhythms.php';
 require_once __DIR__ . '/../src/Compatibility.php';
 require_once __DIR__ . '/../src/DateFormatter.php';
+require_once __DIR__ . '/../src/Forecast.php';
+require_once __DIR__ . '/../src/Ritual.php';
 
 use Biorrhythms\Biorrhythms;
 use Biorrhythms\Compatibility;
 use Biorrhythms\DateFormatter;
+use Biorrhythms\Forecast;
+use Biorrhythms\Ritual;
 
 function clampDateInput(?string $value, string $fallback): string
 {
@@ -69,24 +73,10 @@ $partnerFocusValues = [
     'intellectual' => $bio->calculateIntellectual(daysBetween($partnerBirthDate, $focusDate)),
 ];
 
-$forecast = array_slice($window, $selectedIndex, 7);
-$forecastScored = array_map(static function (array $point): array {
-    $point['score'] = ($point['physical'] + $point['emotional'] + $point['intellectual']) / 3;
-
-    return $point;
-}, $forecast);
-
-$bestForecast = $forecastScored[0];
-$worstForecast = $forecastScored[0];
-foreach ($forecastScored as $point) {
-    if ($point['score'] > $bestForecast['score']) {
-        $bestForecast = $point;
-    }
-
-    if ($point['score'] < $worstForecast['score']) {
-        $worstForecast = $point;
-    }
-}
+$forecast       = array_slice($window, $selectedIndex, 7);
+$forecastScored = Forecast::scoreWindow($forecast);
+$bestForecast   = Forecast::best($forecastScored);
+$worstForecast  = Forecast::worst($forecastScored);
 
 $compatibilityForecast = array_map(static function (array $point) use ($partnerBirthInput, $birthInput): array {
     $bio = new Biorrhythms();
@@ -126,131 +116,19 @@ foreach ($compatibilityForecast as $point) {
     }
 }
 
-$profileLabel = 'Balanced';
-if ($selectedPoint['physical'] >= $selectedPoint['emotional'] && $selectedPoint['physical'] >= $selectedPoint['intellectual']) {
-    $profileLabel = 'Physical peak';
-} elseif ($selectedPoint['emotional'] >= $selectedPoint['physical'] && $selectedPoint['emotional'] >= $selectedPoint['intellectual']) {
-    $profileLabel = 'Emotional peak';
-} elseif ($selectedPoint['intellectual'] >= $selectedPoint['physical'] && $selectedPoint['intellectual'] >= $selectedPoint['emotional']) {
-    $profileLabel = 'Mental peak';
-}
+$profileLabel  = match (true) {
+    $selectedPoint['physical']     >= $selectedPoint['emotional'] && $selectedPoint['physical']     >= $selectedPoint['intellectual'] => 'Physical peak',
+    $selectedPoint['emotional']    >= $selectedPoint['physical']  && $selectedPoint['emotional']    >= $selectedPoint['intellectual'] => 'Emotional peak',
+    $selectedPoint['intellectual'] >= $selectedPoint['physical']  && $selectedPoint['intellectual'] >= $selectedPoint['emotional']   => 'Mental peak',
+    default                        => 'Balanced',
+};
 
-$ritualAverage = ($selectedPoint['physical'] + $selectedPoint['emotional'] + $selectedPoint['intellectual']) / 3;
-$ritualDominantKey = 'physical';
-$ritualDominantValue = $selectedPoint['physical'];
-foreach (['emotional', 'intellectual'] as $key) {
-    if ($selectedPoint[$key] > $ritualDominantValue) {
-        $ritualDominantKey = $key;
-        $ritualDominantValue = $selectedPoint[$key];
-    }
-}
-
-$ritualLabels = [
-    'physical' => 'Físico',
-    'emotional' => 'Emocional',
-    'intellectual' => 'Intelectual',
-];
-
-if ($ritualAverage >= 0.35) {
-    if ($ritualDominantKey === 'physical') {
-        $ritual = [
-            'badge' => 'Ventana de empuje',
-            'focus' => 'El cuerpo lidera y la media acompaña.',
-            'why' => 'Hoy conviene usar la energía para movimiento, entrega o cierres que consumen fuerza.',
-            'lines' => [
-                'Empieza con una acción física y un cierre rápido.',
-                sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-                'Cierra con una revisión breve y una pausa consciente para no arrastrar la curva al final del día.',
-            ],
-        ];
-    } elseif ($ritualDominantKey === 'emotional') {
-        $ritual = [
-            'badge' => 'Ventana social',
-            'focus' => 'La parte emocional está arriba y la ventana favorece el vínculo.',
-            'why' => 'Hoy funciona mejor coordinar, escuchar y dejar espacio para conversaciones con tacto.',
-            'lines' => [
-                'Empieza con una conversación importante o una coordinación pendiente.',
-                sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-                'Cierra con una revisión breve y una pausa consciente para no arrastrar la curva al final del día.',
-            ],
-        ];
-    } else {
-        $ritual = [
-            'badge' => 'Ventana mental',
-            'focus' => 'El ritmo intelectual domina y el promedio acompaña.',
-            'why' => 'Hoy conviene escribir, decidir y estructurar antes que dispersarte en tareas largas.',
-            'lines' => [
-                'Empieza con escritura, estructura o una decisión clara.',
-                sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-                'Cierra con una revisión breve y una pausa consciente para no arrastrar la curva al final del día.',
-            ],
-        ];
-    }
-} elseif ($ritualAverage >= 0.1) {
-    if ($ritualDominantKey === 'physical') {
-        $ritual = [
-            'badge' => 'Ritmo estable',
-            'focus' => 'La energía física ayuda, pero sin exceso.',
-            'why' => 'Va mejor para avanzar paso a paso y evitar maratones innecesarias.',
-            'lines' => [
-                'Empieza con una acción útil y concreta, sin cargar demasiado la agenda.',
-                sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-                'Cierra con una revisión ligera y deja algo de margen para mañana.',
-            ],
-        ];
-    } elseif ($ritualDominantKey === 'emotional') {
-        $ritual = [
-            'badge' => 'Ritmo sensible',
-            'focus' => 'La lectura emocional tira del día.',
-            'why' => 'Funciona mejor para coordinar, cuidar el tono y no forzar decisiones duras.',
-            'lines' => [
-                'Empieza con coordinación suave y un mensaje claro.',
-                sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-                'Cierra con una revisión ligera y deja algo de margen para mañana.',
-            ],
-        ];
-    } else {
-        $ritual = [
-            'badge' => 'Ritmo analítico',
-            'focus' => 'El intelecto sostiene el día, pero la energía total no es alta.',
-            'why' => 'Mejor una lista corta que un proyecto interminable.',
-            'lines' => [
-                'Empieza con foco corto y una revisión de lo importante.',
-                sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-                'Cierra con una revisión ligera y deja algo de margen para mañana.',
-            ],
-        ];
-    }
-} elseif ($ritualAverage >= -0.15) {
-    $ritual = [
-        'badge' => 'Ventana neutra',
-        'focus' => 'No hay un pico claro, así que simplifica.',
-        'why' => 'La mejor jugada es bajar fricción, limpiar pendientes y no meter demasiada carga.',
-        'lines' => [
-            'Empieza ordenando una sola cosa que te quite ruido.',
-            sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-            'Cierra con una revisión breve y una pausa consciente para no arrastrar la curva al final del día.',
-        ],
-    ];
-} else {
-    $ritual = [
-        'badge' => 'Ventana de recuperación',
-        'focus' => 'La lectura general está baja.',
-        'why' => 'Sirve más para descansar, documentar o hacer tareas mecánicas que para empujar fuerte.',
-        'lines' => [
-            'Empieza bajando intensidad y eligiendo una sola tarea mecánica.',
-            sprintf('Reserva %s para la tarea más importante y evita empujar en %s.', $bestForecast['label'], $worstForecast['label']),
-            'Cierra con una revisión breve y una pausa consciente para no arrastrar la curva al final del día.',
-        ],
-    ];
-}
-
-$ritual['tags'] = [
-    $ritualLabels[$ritualDominantKey],
-    $bestForecast['label'],
-    $worstForecast['label'],
-];
-$ritual['note'] = sprintf('Ritual de 3 pasos para un día con foco en %s.', strtolower($ritualLabels[$ritualDominantKey]));
+$ritual = Ritual::generate(
+    average:      Forecast::average($selectedPoint),
+    dominantKey:  Forecast::dominantKey($selectedPoint),
+    bestLabel:    $bestForecast['label'],
+    worstLabel:   $worstForecast['label'],
+);
 
 $appLinkParams = [
     'birth' => $birthInput,
