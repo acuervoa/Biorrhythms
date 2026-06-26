@@ -1,6 +1,6 @@
 # Biorrhythms
 
-Producto PHP simple para visualizar biorritmos sin instalar dependencias en la máquina, manteniendo una demo separada de alto impacto.
+App PHP para visualizar biorritmos sin instalar dependencias en la máquina.
 
 ## Verlo en local con Docker
 
@@ -11,25 +11,19 @@ docker compose up
 Abre:
 
 ```text
-http://localhost:8000
+http://localhost:8002
 ```
 
 ## Rutas
 
-- `/` producto principal con lectura diaria, forecast, compatibilidad, widget y API.
-- `/demo/` demo visual con timeline, story mode y exportación de imágenes.
+- `/` app principal: timeline, lectura diaria, forecast, compatibilidad, story mode, widget y exportación.
 - `/api/` endpoint JSON estable para integraciones.
 
-## Qué hace el producto
+## Qué hace
 
 - Calcula biorritmos físico, emocional e intelectual.
-- Muestra lectura diaria, forecast y ritual accionable.
+- Muestra timeline de 90 días, forecast de 7 días y ritual accionable.
 - Permite comparar compatibilidad entre dos personas.
-- Expone widget embebible y API JSON.
+- Exporta tarjeta PNG y expone widget embebible vía iframe.
+- Expone API JSON para integraciones externas.
 - Funciona sin Composer, Node ni PHP instalados en el host.
-
-## Qué hace la demo
-
-- Mantiene la experiencia visual original con timeline y story mode.
-- Conserva share cards, exportaciones PNG y compatibilidad avanzada.
-- Sigue disponible como escaparate público sin perder la versión producto.
