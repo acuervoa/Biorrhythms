@@ -226,7 +226,74 @@ $seriesData = [
         }
 
         body[data-theme="light"] .card {
-            box-shadow: 0 16px 40px rgba(17, 24, 39, 0.12);
+            box-shadow: 0 4px 24px rgba(17, 24, 39, 0.10);
+            border-color: rgba(16, 24, 40, 0.12);
+        }
+
+        /* Light theme: fix all white-tinted surfaces to dark-tinted */
+        body[data-theme="light"] .detail,
+        body[data-theme="light"] .stat,
+        body[data-theme="light"] .hero-stat,
+        body[data-theme="light"] .widget-mini-stat,
+        body[data-theme="light"] .widget-panel,
+        body[data-theme="light"] .extreme-item,
+        body[data-theme="light"] .compat-day,
+        body[data-theme="light"] .compat-heatmap-cell,
+        body[data-theme="light"] .decision-panel,
+        body[data-theme="light"] .decision-calendar,
+        body[data-theme="light"] .event-row,
+        body[data-theme="light"] .api-panel,
+        body[data-theme="light"] .controls-bar label,
+        body[data-theme="light"] .share-metric,
+        body[data-theme="light"] .story-slide,
+        body[data-theme="light"] .forecast-day,
+        body[data-theme="light"] .widget-chart-shell {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        body[data-theme="light"] .widget-note {
+            background: rgba(199, 136, 39, 0.10);
+            border-color: rgba(199, 136, 39, 0.25);
+        }
+
+        /* Muted text needs more contrast on light */
+        body[data-theme="light"] {
+            --muted: #3d5168;
+        }
+
+        /* Chart grid lines */
+        body[data-theme="light"] .chart-grid line,
+        body[data-theme="light"] .chart-zero {
+            stroke: rgba(0, 0, 0, 0.12);
+        }
+
+        /* Inputs in light mode */
+        body[data-theme="light"] input[type="date"],
+        body[data-theme="light"] textarea,
+        body[data-theme="light"] .widget-code textarea {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.15);
+            color: #18202b;
+        }
+
+        /* Snippet/API textarea */
+        body[data-theme="light"] .api-snippet,
+        body[data-theme="light"] .api-snippet textarea,
+        body[data-theme="light"] .widget-code textarea {
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        /* Compat bars */
+        body[data-theme="light"] .compat-fill {
+            opacity: 0.7;
+        }
+
+        /* Status pills */
+        body[data-theme="light"] .status-pill {
+            background: rgba(0, 0, 0, 0.08);
+            color: #18202b;
         }
 
         .hero-main,
@@ -1489,8 +1556,10 @@ $seriesData = [
         }
 
         body.embed-view .shell {
-            width: min(840px, calc(100% - 24px));
-            margin: 12px auto;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            gap: 0;
         }
 
         body.embed-view .shell > :not(.widget-card) {
@@ -1499,8 +1568,12 @@ $seriesData = [
 
         body.embed-view .widget-card {
             margin-top: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
         }
 
+        body.embed-view .widget-head,
         body.embed-view .widget-code,
         body.embed-view .widget-frame,
         body.embed-view .api-card {
@@ -1513,6 +1586,30 @@ $seriesData = [
 
         body.embed-view .widget-grid > div.widget-panel {
             display: none;
+        }
+
+        body.embed-view .widget-panel {
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            padding: 16px;
+        }
+
+        body.embed-view {
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top left, rgba(255, 123, 84, 0.18), transparent 30%),
+                radial-gradient(circle at top right, rgba(125, 211, 252, 0.18), transparent 28%),
+                radial-gradient(circle at bottom center, rgba(110, 231, 183, 0.12), transparent 25%),
+                linear-gradient(160deg, #040812 0%, #07111f 45%, #0c172a 100%);
+        }
+
+        body.embed-view[data-theme="light"] {
+            background:
+                radial-gradient(circle at top left, rgba(240, 95, 59, 0.18), transparent 26%),
+                radial-gradient(circle at top right, rgba(25, 118, 210, 0.18), transparent 28%),
+                radial-gradient(circle at bottom center, rgba(36, 154, 121, 0.14), transparent 24%),
+                linear-gradient(160deg, #fdf8f2 0%, #f5f3ee 45%, #e7ecf6 100%);
         }
 
         .forecast-spark {
@@ -2765,13 +2862,16 @@ $seriesData = [
         let selectedIndex = data.selectedIndex;
         let storyIndex = 0;
         let storyTimer = null;
-        let theme = window.localStorage.getItem('biorrhythms-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        const isEmbedView = document.body.classList.contains('embed-view');
+        let theme = isEmbedView
+            ? (document.body.dataset.theme || 'dark')
+            : (window.localStorage.getItem('biorrhythms-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
 
         function applyTheme(nextTheme) {
             theme = nextTheme === 'light' ? 'light' : 'dark';
             document.body.dataset.theme = theme;
-            themeToggleBtn.textContent = theme === 'light' ? 'Tema oscuro' : 'Tema claro';
-            window.localStorage.setItem('biorrhythms-theme', theme);
+            if (themeToggleBtn) themeToggleBtn.textContent = theme === 'light' ? 'Tema oscuro' : 'Tema claro';
+            if (!isEmbedView) window.localStorage.setItem('biorrhythms-theme', theme);
             updateWidgetEmbedSnippet();
         }
 
