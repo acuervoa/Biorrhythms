@@ -3633,51 +3633,73 @@ $seriesData = [
             const worst = points.reduce((carry, point) => (point.score < carry.score ? point : carry), points[0]);
             const urlLabel = escapeXml(`${window.location.pathname}${window.location.search}`);
 
+            const isDark = theme !== 'light';
+            const fg    = isDark ? '#ecf2ff' : '#18202b';
+            const muted = isDark ? '#9bb0d0' : '#516174';
+            const bg0   = isDark ? '#07111f'  : '#f7f2eb';
+            const bg1   = isDark ? '#10213b'  : '#e7eef9';
+            const panelFill   = isDark ? 'rgba(8,14,27,0.76)'   : 'rgba(255,255,255,0.72)';
+            const narrativeRaw = compatNarrative.textContent.trim();
+            const narrative = narrativeRaw.length > 72 ? narrativeRaw.slice(0, 70) + '…' : narrativeRaw;
+
+            // Heatmap layout: 7 cards, 76px step, 62px wide, starts at x=618
+            const HX = 618, STEP = 76, CW = 62, CH = 130;
+            const heatmapCards = points.map((point, index) => {
+                const score = Math.round(point.score * 100);
+                const cx = HX + index * STEP + CW / 2;
+                const cy = 370;
+                const color = score >= 80 ? '#6ee7b7' : score >= 62 ? '#f8c95d' : '#ff7b54';
+                const textFill = isDark ? '#ecf2ff' : '#18202b';
+                const [wday, day, mon] = point.label.split(' ');
+                return `<rect x="${HX + index * STEP}" y="${cy}" width="${CW}" height="${CH}" rx="14" fill="${color}" fill-opacity="0.15" stroke="${color}" stroke-opacity="0.55" stroke-width="1.5"/>
+  <text x="${cx}" y="${cy + 22}" text-anchor="middle" style="font:700 13px Arial,sans-serif;fill:${muted}">${escapeXml(wday ?? '')}</text>
+  <text x="${cx}" y="${cy + 50}" text-anchor="middle" style="font:700 22px Georgia,serif;fill:${textFill}">${escapeXml(day ?? '')}</text>
+  <text x="${cx}" y="${cy + 70}" text-anchor="middle" style="font:400 13px Arial,sans-serif;fill:${muted}">${escapeXml(mon ?? '')}</text>
+  <text x="${cx}" y="${cy + 106}" text-anchor="middle" style="font:700 20px Georgia,serif;fill:${color}">${score}%</text>`;
+            }).join('\n');
+
             return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="${theme === 'light' ? '#f7f2eb' : '#07111f'}"/>
-      <stop offset="100%" stop-color="${theme === 'light' ? '#e7eef9' : '#10213b'}"/>
+      <stop offset="0%" stop-color="${bg0}"/>
+      <stop offset="100%" stop-color="${bg1}"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f8c95d"/>
-      <stop offset="100%" stop-color="#ffb36f"/>
-    </linearGradient>
-    <style>
-      .title { font: 700 58px Georgia, serif; fill: ${theme === 'light' ? '#18202b' : '#ecf2ff'}; }
-      .sub { font: 400 23px Georgia, serif; fill: ${theme === 'light' ? '#516174' : '#9bb0d0'}; }
-      .pill { font: 700 17px Arial, sans-serif; fill: #18202b; }
-      .label { font: 700 17px Arial, sans-serif; fill: ${theme === 'light' ? '#516174' : '#9bb0d0'}; letter-spacing: 1px; text-transform: uppercase; }
-      .value { font: 700 36px Georgia, serif; fill: ${theme === 'light' ? '#18202b' : '#ecf2ff'}; }
-      .small { font: 400 18px Georgia, serif; fill: ${theme === 'light' ? '#516174' : '#9bb0d0'}; }
-    </style>
   </defs>
   <rect width="1200" height="630" rx="40" fill="url(#bg)"/>
-  <rect x="44" y="44" width="1112" height="542" rx="32" fill="${theme === 'light' ? 'rgba(255,255,255,0.72)' : 'rgba(8,14,27,0.76)'}" stroke="rgba(255,255,255,0.12)"/>
-  <text x="84" y="118" class="pill">BIORHYTHMS / COMPATIBILITY</text>
-  <text x="84" y="192" class="title">Modo compatibilidad</text>
-  <text x="84" y="236" class="sub">${birthInput} · ${partnerBirth}</text>
-  <text x="84" y="276" class="sub">Fecha foco: ${focusInput}</text>
-  <text x="84" y="338" class="label">Score actual</text>
-  <text x="84" y="394" class="value">${Math.round(selected.score * 100)}%</text>
-  <text x="84" y="448" class="small">${escapeXml(compatNarrative.textContent)}</text>
-  <text x="84" y="506" class="label">Mejor ventana</text>
-  <text x="84" y="548" class="sub">${escapeXml(`${best.label} · ${Math.round(best.score * 100)}%`)}</text>
-  <text x="384" y="506" class="label">Peor ventana</text>
-  <text x="384" y="548" class="sub">${escapeXml(`${worst.label} · ${Math.round(worst.score * 100)}%`)}</text>
-  <text x="684" y="506" class="label">Preset</text>
-  <text x="684" y="548" class="sub">${presetLabel(preset)}</text>
-  <text x="684" y="338" class="label">Heatmap 7 días</text>
-  ${points.map((point, index) => {
-    const score = Math.round(point.score * 100);
-    const x = 684 + index * 70;
-    const color = score >= 80 ? '#6ee7b7' : score >= 62 ? '#f8c95d' : '#ff7b54';
-    return `<rect x="${x}" y="360" width="56" height="124" rx="16" fill="${color}" fill-opacity="0.18" stroke="${color}" stroke-opacity="0.5"/>
-            <text x="${x + 10}" y="392" class="small">${escapeXml(point.label)}</text>
-            <text x="${x + 10}" y="438" class="value" style="font-size:24px">${score}%</text>`;
-  }).join('')}
-  <line x1="84" y1="576" x2="1116" y2="576" stroke="rgba(255,255,255,0.14)"/>
-  <text x="84" y="604" class="small">${urlLabel}</text>
+  <rect x="44" y="44" width="1112" height="542" rx="32" fill="${panelFill}" stroke="rgba(255,255,255,0.12)"/>
+
+  <!-- Header -->
+  <text x="84" y="108" style="font:700 14px Arial,sans-serif;fill:${muted};letter-spacing:2px;text-transform:uppercase">BIORHYTHMS / COMPATIBILITY</text>
+  <text x="84" y="175" style="font:700 54px Georgia,serif;fill:${fg}">Modo compatibilidad</text>
+  <text x="84" y="213" style="font:400 22px Georgia,serif;fill:${muted}">${escapeXml(birthInput)} · ${escapeXml(partnerBirth)}</text>
+  <text x="84" y="247" style="font:400 20px Georgia,serif;fill:${muted}">Fecha foco: ${escapeXml(focusInput)}</text>
+
+  <!-- Divider -->
+  <line x1="84" y1="272" x2="580" y2="272" stroke="rgba(255,255,255,0.1)"/>
+
+  <!-- Score -->
+  <text x="84" y="308" style="font:700 13px Arial,sans-serif;fill:${muted};letter-spacing:2px;text-transform:uppercase">SCORE ACTUAL</text>
+  <text x="84" y="378" style="font:700 70px Georgia,serif;fill:${fg}">${Math.round(selected.score * 100)}%</text>
+  <text x="84" y="420" style="font:400 17px Georgia,serif;fill:${muted}">${escapeXml(narrative)}</text>
+
+  <!-- Best / Worst / Preset -->
+  <text x="84"  y="468" style="font:700 13px Arial,sans-serif;fill:${muted};letter-spacing:2px;text-transform:uppercase">MEJOR VENTANA</text>
+  <text x="84"  y="500" style="font:400 20px Georgia,serif;fill:${fg}">${escapeXml(`${best.label} · ${Math.round(best.score * 100)}%`)}</text>
+  <text x="310" y="468" style="font:700 13px Arial,sans-serif;fill:${muted};letter-spacing:2px;text-transform:uppercase">PEOR VENTANA</text>
+  <text x="310" y="500" style="font:400 20px Georgia,serif;fill:${fg}">${escapeXml(`${worst.label} · ${Math.round(worst.score * 100)}%`)}</text>
+  <text x="84"  y="545" style="font:700 13px Arial,sans-serif;fill:${muted};letter-spacing:2px;text-transform:uppercase">PRESET</text>
+  <text x="84"  y="572" style="font:400 18px Georgia,serif;fill:${fg}">${escapeXml(presetLabel(preset))}</text>
+
+  <!-- Vertical separator -->
+  <line x1="598" y1="100" x2="598" y2="530" stroke="rgba(255,255,255,0.1)"/>
+
+  <!-- Heatmap -->
+  <text x="${HX}" y="348" style="font:700 13px Arial,sans-serif;fill:${muted};letter-spacing:2px;text-transform:uppercase">PRÓXIMOS 7 DÍAS</text>
+  ${heatmapCards}
+
+  <!-- URL footer -->
+  <line x1="44" y1="556" x2="1156" y2="556" stroke="rgba(255,255,255,0.08)"/>
+  <text x="84" y="585" style="font:400 15px Arial,sans-serif;fill:${muted}">${escapeXml(urlLabel)}</text>
 </svg>`;
         }
 
