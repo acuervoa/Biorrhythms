@@ -229,14 +229,11 @@ $seriesData = [
 
         .shell {
             width: min(1180px, calc(100% - 32px));
-            margin: 24px auto 48px;
+            margin: 14px auto 32px;
         }
 
         .hero {
-            display: grid;
-            gap: 18px;
-            grid-template-columns: 1.4fr 0.9fr;
-            align-items: stretch;
+            display: block;
         }
 
         .card {
@@ -281,7 +278,60 @@ $seriesData = [
         body.ready .detail:nth-child(4) { transition-delay: 480ms; }
 
         .hero-main {
-            padding: 28px;
+            padding: 18px 24px;
+        }
+
+        .hero-body {
+            display: flex;
+            align-items: flex-start;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .hero-text {
+            flex: 1 1 320px;
+        }
+
+        .hero-stats-inline {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+            margin-top: 4px;
+        }
+
+        .controls-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 12px 20px;
+            margin-top: 10px;
+        }
+
+        .controls-bar label {
+            flex: 1 1 140px;
+            min-width: 120px;
+        }
+
+        .controls-bar .bar-submit {
+            flex: 0 0 auto;
+            margin-top: 0;
+            align-self: flex-end;
+        }
+
+        .controls-bar .bar-slider {
+            flex: 1 1 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .controls-bar .bar-slider small {
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
         }
 
         .hero-topline {
@@ -295,8 +345,8 @@ $seriesData = [
         .kicker {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
+            gap: 8px;
+            padding: 5px 10px;
             border: 1px solid rgba(248, 201, 93, 0.22);
             border-radius: 999px;
             background: rgba(248, 201, 93, 0.08);
@@ -307,25 +357,30 @@ $seriesData = [
         }
 
         h1 {
-            margin: 16px 0 10px;
-            font-size: clamp(2.5rem, 5vw, 4.7rem);
-            line-height: 0.94;
-            letter-spacing: -0.04em;
+            margin: 10px 0 6px;
+            font-size: clamp(1.8rem, 3.5vw, 3rem);
+            line-height: 0.97;
+            letter-spacing: -0.03em;
         }
 
         .lead {
             max-width: 60ch;
             margin: 0;
             color: var(--muted);
-            font-size: 1.05rem;
-            line-height: 1.6;
+            font-size: 0.95rem;
+            line-height: 1.55;
         }
 
         .hero-chips {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 18px;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .hero-callout .hero-chips {
+            margin-top: 0;
+            padding: 0 14px 10px;
         }
 
         .hero-chip {
@@ -349,44 +404,60 @@ $seriesData = [
         }
 
         .hero-callout {
-            margin-top: 18px;
-            padding: 16px 18px;
-            border-radius: 20px;
+            margin-top: 12px;
+            border-radius: 16px;
             border: 1px solid rgba(248, 201, 93, 0.16);
             background:
                 linear-gradient(135deg, rgba(248, 201, 93, 0.08), rgba(125, 211, 252, 0.05)),
                 rgba(255, 255, 255, 0.03);
         }
 
-        .hero-callout small {
-            display: block;
-            margin-bottom: 6px;
+        .hero-callout summary {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            list-style: none;
             color: #ffe7a8;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             font-size: 0.72rem;
+            user-select: none;
+        }
+
+        .hero-callout summary::after {
+            content: '▸';
+            margin-left: auto;
+            transition: transform 180ms;
+        }
+
+        .hero-callout[open] summary::after {
+            transform: rotate(90deg);
         }
 
         .hero-callout p {
             margin: 0;
+            padding: 0 14px 12px;
             color: var(--text);
             line-height: 1.5;
+            font-size: 0.9rem;
         }
 
         .hero-side {
             display: grid;
-            gap: 18px;
+            gap: 10px;
         }
 
         .stat-grid {
             display: grid;
-            gap: 12px;
+            gap: 8px;
             grid-template-columns: repeat(3, 1fr);
-            margin-top: 22px;
+            margin-top: 12px;
         }
 
         .stat {
-            padding: 14px 14px 16px;
+            padding: 10px 12px 12px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 18px;
             background: rgba(255, 255, 255, 0.03);
@@ -394,7 +465,7 @@ $seriesData = [
 
         .stat small {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             color: var(--muted);
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -403,37 +474,37 @@ $seriesData = [
 
         .stat strong {
             display: block;
-            font-size: 1.6rem;
+            font-size: 1.3rem;
             line-height: 1;
         }
 
         .stat span {
             display: block;
-            margin-top: 8px;
+            margin-top: 4px;
             color: var(--muted);
             font-size: 0.82rem;
         }
 
         .controls {
-            padding: 22px;
+            padding: 16px 20px;
         }
 
         .controls-grid {
             display: grid;
-            gap: 14px;
+            gap: 10px;
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         label {
             display: grid;
-            gap: 8px;
+            gap: 5px;
             color: var(--muted);
             font-size: 0.88rem;
         }
 
         input[type="date"] {
             width: 100%;
-            padding: 14px 16px;
+            padding: 10px 12px;
             color: var(--text);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 14px;
@@ -442,8 +513,8 @@ $seriesData = [
         }
 
         button {
-            margin-top: 16px;
-            padding: 14px 18px;
+            margin-top: 10px;
+            padding: 10px 18px;
             border: 0;
             border-radius: 14px;
             color: #06111f;
@@ -454,11 +525,11 @@ $seriesData = [
         }
 
         .section {
-            margin-top: 18px;
+            margin-top: 10px;
         }
 
         .panel {
-            padding: 20px;
+            padding: 14px 18px;
         }
 
         .chart-wrap {
@@ -470,13 +541,13 @@ $seriesData = [
             flex-wrap: wrap;
             align-items: end;
             justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
 
         .panel-head h2 {
             margin: 0;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
         }
 
         .panel-head p {
@@ -832,7 +903,7 @@ $seriesData = [
         .decision-grid {
             display: grid;
             gap: 14px;
-            grid-template-columns: 0.95fr 1.05fr;
+            grid-template-columns: 1fr;
         }
 
         .decision-panel {
@@ -867,17 +938,22 @@ $seriesData = [
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            align-self: start;
+            align-items: flex-start;
         }
 
         .decision-tag {
             display: inline-flex;
             align-items: center;
-            padding: 7px 10px;
-            border-radius: 999px;
+            justify-content: center;
+            padding: 6px 14px;
+            border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(255, 255, 255, 0.04);
             color: var(--text);
             font-size: 0.78rem;
+            white-space: nowrap;
+            height: auto;
         }
 
         .decision-calendar {
@@ -895,19 +971,20 @@ $seriesData = [
         }
 
         .decision-calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .decision-day {
             display: grid;
-            gap: 8px;
-            padding: 12px;
-            border-radius: 16px;
+            grid-template-columns: 90px 1fr 2fr auto auto;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 14px;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            min-height: 152px;
         }
 
         .decision-day.is-best {
@@ -927,8 +1004,8 @@ $seriesData = [
         }
 
         .decision-day strong {
-            font-size: 0.96rem;
-            line-height: 1.25;
+            font-size: 0.9rem;
+            line-height: 1.3;
         }
 
         .decision-day p {
@@ -939,9 +1016,9 @@ $seriesData = [
         }
 
         .decision-day .decision-action {
-            margin-top: auto;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: #ffe7a8;
+            white-space: nowrap;
         }
 
         .widget-card {
@@ -1043,6 +1120,112 @@ $seriesData = [
             line-height: 1.45;
         }
 
+        .widget-chart-shell {
+            position: relative;
+            padding: 12px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .widget-chart-title {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .widget-chart-title strong {
+            font-size: 0.88rem;
+            line-height: 1.2;
+        }
+
+        .widget-chart-title span {
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        .widget-chart {
+            width: 100%;
+            height: 190px;
+            display: block;
+        }
+
+        .widget-chart .grid-line {
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 1;
+        }
+
+        .widget-chart .zero-line {
+            stroke: rgba(248, 201, 93, 0.25);
+            stroke-width: 1.4;
+            stroke-dasharray: 6 6;
+        }
+
+        .widget-chart .today-line {
+            stroke: rgba(248, 201, 93, 0.8);
+            stroke-width: 1.4;
+        }
+
+        .widget-chart .series-line {
+            fill: none;
+            stroke-width: 3.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .widget-chart .series-point {
+            fill: var(--bg);
+            stroke-width: 2.4;
+        }
+
+        .widget-chart-tooltip {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            min-width: 170px;
+            padding: 10px 11px;
+            border-radius: 14px;
+            background: rgba(10, 18, 32, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+            color: var(--text);
+            transform: translate(-50%, -110%);
+            opacity: 0;
+            transition: opacity 140ms ease;
+        }
+
+        body[data-theme="light"] .widget-chart-tooltip {
+            background: rgba(255, 255, 255, 0.96);
+        }
+
+        .widget-chart-tooltip.is-visible {
+            opacity: 1;
+        }
+
+        .widget-chart-tooltip strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+
+        .widget-chart-tooltip .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+
+        .widget-chart-tooltip .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            margin-right: 6px;
+        }
+
         .widget-code {
             display: grid;
             gap: 10px;
@@ -1102,11 +1285,10 @@ $seriesData = [
         .api-grid {
             display: grid;
             gap: 14px;
-            grid-template-columns: 0.95fr 1.05fr;
+            grid-template-columns: 1fr;
         }
 
         .api-preview {
-            min-height: 320px;
             margin: 0;
             padding: 14px;
             border-radius: 16px;
@@ -1116,6 +1298,30 @@ $seriesData = [
             overflow: auto;
             font: 0.83rem/1.5 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
             white-space: pre-wrap;
+            max-height: calc(1.5em * 30 + 28px);
+        }
+
+        .api-preview.expanded {
+            max-height: none;
+        }
+
+        .api-preview-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .api-preview-toggle:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
         }
 
         .api-snippet {
@@ -1388,16 +1594,64 @@ $seriesData = [
             font-size: 1.5rem;
         }
 
-        .story-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+        @keyframes storySlideIn {
+            from { transform: translateX(48px); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
         }
 
-        .story-controls .secondary-btn.is-active {
-            background: rgba(248, 201, 93, 0.12);
-            border-color: rgba(248, 201, 93, 0.3);
-            color: #ffe7a8;
+        .story-slide {
+            display: grid;
+            gap: 14px;
+        }
+
+        .story-slide.is-entering {
+            animation: storySlideIn 380ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        .story-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .story-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .story-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            transition: background 200ms, transform 200ms;
+        }
+
+        .story-dot.is-active {
+            background: #ffe7a8;
+            transform: scale(1.3);
+        }
+
+        .story-pause-btn {
+            font-size: 0.8rem;
+            padding: 6px 14px;
+        }
+
+        .story-progress-bar {
+            height: 2px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .story-progress-fill {
+            height: 100%;
+            background: rgba(248, 201, 93, 0.6);
+            width: 0%;
+            transition: width linear;
         }
 
         .compat-card {
@@ -1671,80 +1925,71 @@ $seriesData = [
                     <div class="kicker">Biorrhythms demo</div>
                     <button id="themeToggleBtn" type="button" class="theme-toggle">Tema claro</button>
                 </div>
-                <h1>Un ciclo simple, convertido en un tablero vivo.</h1>
-                <p class="lead">
-                    Esta demo muestra tus tres ritmos como una escena visual: curvas, foco del día y una ventana de 90 días
-                    para explorar picos, valles y simetrías sin instalar nada en la máquina.
-                </p>
-                <div class="hero-chips" aria-label="Resumen del producto">
-                    <span class="hero-chip"><strong>Local</strong> Docker + PHP sin instalar nada</span>
-                    <span class="hero-chip"><strong>Shareable</strong> URL con estado persistente</span>
-                    <span class="hero-chip"><strong>Export</strong> PNG listo para demo</span>
-                </div>
-                <div class="hero-callout">
-                    <small>Qué hace esta demo</small>
-                    <p>
-                        Convierte una librería mínima en una experiencia visual: lectura individual, compatibilidad entre personas
-                        y una exportación que puedes compartir sin perder el contexto.
-                    </p>
-                </div>
-
-                <div class="stat-grid">
-                    <div class="stat">
-                        <small>Físico</small>
-                        <strong id="stat-physical"><?= htmlspecialchars(valueToPercent($selectedPoint['physical'])) ?></strong>
-                        <span>Periodo: 23 días</span>
+                <div class="hero-body">
+                    <div class="hero-text">
+                        <h1>Un ciclo simple, convertido en un tablero vivo.</h1>
+                        <p class="lead">
+                            Esta demo muestra tus tres ritmos como una escena visual: curvas, foco del día y una ventana de 90 días
+                            para explorar picos, valles y simetrías sin instalar nada en la máquina.
+                        </p>
+                        <details class="hero-callout">
+                            <summary>Qué hace esta demo</summary>
+                            <div class="hero-chips" aria-label="Resumen del producto">
+                                <span class="hero-chip"><strong>Local</strong> Docker + PHP sin instalar nada</span>
+                                <span class="hero-chip"><strong>Shareable</strong> URL con estado persistente</span>
+                                <span class="hero-chip"><strong>Export</strong> PNG listo para demo</span>
+                            </div>
+                            <p>
+                                Convierte una librería mínima en una experiencia visual: lectura individual, compatibilidad entre personas
+                                y una exportación que puedes compartir sin perder el contexto.
+                            </p>
+                        </details>
                     </div>
-                    <div class="stat">
-                        <small>Emocional</small>
-                        <strong id="stat-emotional"><?= htmlspecialchars(valueToPercent($selectedPoint['emotional'])) ?></strong>
-                        <span>Periodo: 28 días</span>
-                    </div>
-                    <div class="stat">
-                        <small>Intelectual</small>
-                        <strong id="stat-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
-                        <span>Periodo: 33 días</span>
+                    <div class="hero-stats-inline">
+                        <div class="stat">
+                            <small>Físico</small>
+                            <strong id="stat-physical"><?= htmlspecialchars(valueToPercent($selectedPoint['physical'])) ?></strong>
+                            <span>23 días</span>
+                        </div>
+                        <div class="stat">
+                            <small>Emocional</small>
+                            <strong id="stat-emotional"><?= htmlspecialchars(valueToPercent($selectedPoint['emotional'])) ?></strong>
+                            <span>28 días</span>
+                        </div>
+                        <div class="stat">
+                            <small>Intelectual</small>
+                            <strong id="stat-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
+                            <span>33 días</span>
+                        </div>
                     </div>
                 </div>
             </article>
+        </section>
 
-            <aside class="hero-side">
-                <section class="card controls">
-                    <form method="get">
-                        <div class="controls-grid">
-                            <label>
-                                Fecha de nacimiento
-                                <input type="date" name="birth" value="<?= htmlspecialchars($birthInput) ?>">
-                            </label>
-                            <label>
-                                Fecha de la otra persona
-                                <input type="date" name="partner_birth" value="<?= htmlspecialchars($partnerBirthInput) ?>">
-                            </label>
-                            <input type="hidden" name="preset" id="compatPresetInput" value="<?= htmlspecialchars($compatPresetInput) ?>">
-                            <label>
-                                Día de foco
-                                <input type="date" name="focus" value="<?= htmlspecialchars($focusInput) ?>">
-                            </label>
-                        </div>
-                        <button type="submit">Actualizar vista</button>
-                    </form>
-                </section>
-
-                <section class="card controls">
-                    <div class="panel-head">
-                        <div>
-                            <h2>Vista rápida</h2>
-                            <p>Selecciona un punto de la ventana y mira cómo cambia la lectura.</p>
-                        </div>
-                    </div>
-                    <div class="slider-wrap">
-                        <input id="windowSlider" type="range" min="0" max="<?= (int) (count($window) - 1) ?>" value="<?= $selectedIndex ?>">
-                    </div>
-                    <div class="footer-note" id="selectedLabel">
-                        <?= htmlspecialchars($selectedPoint['label']) ?> · offset <?= (int) $selectedPoint['offset'] ?> días
-                    </div>
-                </section>
-            </aside>
+        <section class="card controls-bar">
+            <form method="get" style="display:contents;">
+                <input type="hidden" name="preset" id="compatPresetInput" value="<?= htmlspecialchars($compatPresetInput) ?>">
+                <label>
+                    Fecha de nacimiento
+                    <input type="date" name="birth" value="<?= htmlspecialchars($birthInput) ?>">
+                </label>
+                <label>
+                    Fecha de la otra persona
+                    <input type="date" name="partner_birth" value="<?= htmlspecialchars($partnerBirthInput) ?>">
+                </label>
+                <label>
+                    Día de foco
+                    <input type="date" name="focus" value="<?= htmlspecialchars($focusInput) ?>">
+                </label>
+                <button type="submit" class="bar-submit">Actualizar vista</button>
+            </form>
+            <div class="bar-slider">
+                <small>Vista rápida</small>
+                <input id="windowSlider" type="range" min="0" max="<?= (int) (count($window) - 1) ?>" value="<?= $selectedIndex ?>">
+                <div class="footer-note" id="selectedLabel">
+                    <?= htmlspecialchars($selectedPoint['label']) ?> · offset <?= (int) $selectedPoint['offset'] ?> días
+                </div>
+            </div>
         </section>
 
         <section class="section card panel chart-wrap">
@@ -1800,46 +2045,6 @@ $seriesData = [
                 <strong id="detail-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
                 <em>Lectura instantánea</em>
             </article>
-        </section>
-
-        <section class="section card share-card">
-            <div class="share-preview" id="sharePreview">
-                <div class="share-badge">Share card</div>
-                <h2 class="share-title" id="shareTitle"><?= htmlspecialchars($profileLabel) ?></h2>
-                <p class="share-subtitle" id="shareSubtitle">
-                    <?= htmlspecialchars($selectedPoint['label']) ?> · nacimiento <?= htmlspecialchars($birthInput) ?> · foco <?= htmlspecialchars($focusInput) ?>
-                </p>
-                <div class="share-metrics">
-                    <div class="share-metric">
-                        <small>Físico</small>
-                        <strong id="sharePhysical"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['physical'])) ?></strong>
-                    </div>
-                    <div class="share-metric">
-                        <small>Emocional</small>
-                        <strong id="shareEmotional"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['emotional'])) ?></strong>
-                    </div>
-                    <div class="share-metric">
-                        <small>Intelectual</small>
-                        <strong id="shareIntellectual"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['intellectual'])) ?></strong>
-                    </div>
-                </div>
-                <div class="status-pill" id="shareStatus"><?= htmlspecialchars($focusSummary) ?></div>
-            </div>
-            <div class="share-side">
-                <div class="panel-head" style="margin:0;">
-                    <div>
-                        <h2>Tarjeta compartible</h2>
-                        <p>Lista para exportar como PNG sin instalar nada más.</p>
-                    </div>
-                </div>
-                <div class="button-row">
-                    <button id="copySummaryBtn" type="button" class="secondary-btn">Copiar resumen</button>
-                    <button id="copyLinkBtn" type="button" class="secondary-btn">Copiar enlace</button>
-                </div>
-                <div class="footer-note">
-                    Exporta una tarjeta visual con el pico del día y los tres ritmos. Es la pieza más útil para demos y redes.
-                </div>
-            </div>
         </section>
 
         <section class="section card compat-card">
@@ -1921,6 +2126,112 @@ $seriesData = [
             </div>
         </section>
 
+        <section class="section card ritual-card">
+            <div class="ritual-head">
+                <div>
+                    <h2>Ritual diario</h2>
+                    <p>Una secuencia corta para empezar, sostener y cerrar el día.</p>
+                </div>
+                <div class="status-pill" id="ritualBadge">Foco listo</div>
+            </div>
+            <div class="ritual-grid">
+                <article class="ritual-panel">
+                    <small>Secuencia de hoy</small>
+                    <ol class="ritual-list" id="ritualLines">
+                        <li>Cargando ritual...</li>
+                        <li>...</li>
+                        <li>...</li>
+                    </ol>
+                    <div class="button-row">
+                        <button id="copyRitualBtn" type="button" class="secondary-btn">Copiar ritual</button>
+                    </div>
+                </article>
+                <article class="ritual-panel">
+                    <small>Foco del día</small>
+                    <strong id="ritualFocus">Preparando lectura</strong>
+                    <p id="ritualWhy">El ritual se construye a partir de la lectura actual y la mejor ventana de la semana.</p>
+                    <div class="decision-tags" id="ritualTags"></div>
+                    <div class="ritual-note" id="ritualNote">Corto, accionable y sin ruido: útil para arrancar con intención.</div>
+                </article>
+            </div>
+        </section>
+
+        <section class="section card story-card">
+            <div class="story-head">
+                <div>
+                    <h2>Story mode</h2>
+                    <p>La demo se narra como una secuencia de escenas, no solo como números.</p>
+                </div>
+                <div class="status-pill" id="storyProgress">Escena 1 / 4</div>
+            </div>
+            <div class="story-stage">
+                <div class="story-slide" id="storySlide">
+                    <div class="story-kicker" id="storyKicker">Inicio</div>
+                    <h3 class="story-title" id="storyTitle">Tu día de foco</h3>
+                    <p class="story-copy" id="storyCopy"></p>
+                    <div class="story-grid">
+                        <div class="story-stat">
+                            <small>Físico</small>
+                            <strong id="storyPhysical">0.0%</strong>
+                        </div>
+                        <div class="story-stat">
+                            <small>Emocional</small>
+                            <strong id="storyEmotional">0.0%</strong>
+                        </div>
+                        <div class="story-stat">
+                            <small>Intelectual</small>
+                            <strong id="storyIntellectual">0.0%</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="story-footer">
+                    <div class="story-dots" id="storyDots"></div>
+                    <button id="storyAutoBtn" type="button" class="secondary-btn story-pause-btn">⏸ Pausar</button>
+                </div>
+                <div class="story-progress-bar"><div class="story-progress-fill" id="storyProgressFill"></div></div>
+            </div>
+        </section>
+
+        <section class="section card share-card">
+            <div class="share-preview" id="sharePreview">
+                <div class="share-badge">Share card</div>
+                <h2 class="share-title" id="shareTitle"><?= htmlspecialchars($profileLabel) ?></h2>
+                <p class="share-subtitle" id="shareSubtitle">
+                    <?= htmlspecialchars($selectedPoint['label']) ?> · nacimiento <?= htmlspecialchars($birthInput) ?> · foco <?= htmlspecialchars($focusInput) ?>
+                </p>
+                <div class="share-metrics">
+                    <div class="share-metric">
+                        <small>Físico</small>
+                        <strong id="sharePhysical"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['physical'])) ?></strong>
+                    </div>
+                    <div class="share-metric">
+                        <small>Emocional</small>
+                        <strong id="shareEmotional"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['emotional'])) ?></strong>
+                    </div>
+                    <div class="share-metric">
+                        <small>Intelectual</small>
+                        <strong id="shareIntellectual"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['intellectual'])) ?></strong>
+                    </div>
+                </div>
+                <div class="status-pill" id="shareStatus"><?= htmlspecialchars($focusSummary) ?></div>
+            </div>
+            <div class="share-side">
+                <div class="panel-head" style="margin:0;">
+                    <div>
+                        <h2>Tarjeta compartible</h2>
+                        <p>Lista para exportar como PNG sin instalar nada más.</p>
+                    </div>
+                </div>
+                <div class="button-row">
+                    <button id="copySummaryBtn" type="button" class="secondary-btn">Copiar resumen</button>
+                    <button id="copyLinkBtn" type="button" class="secondary-btn">Copiar enlace</button>
+                </div>
+                <div class="footer-note">
+                    Exporta una tarjeta visual con el pico del día y los tres ritmos. Es la pieza más útil para demos y redes.
+                </div>
+            </div>
+        </section>
+
         <section class="section card widget-card">
             <div class="widget-head">
                 <div>
@@ -1935,6 +2246,18 @@ $seriesData = [
                         <div class="share-badge">Widget</div>
                         <strong><?= htmlspecialchars($profileLabel) ?></strong>
                         <p><?= htmlspecialchars($selectedPoint['label']) ?> · nacimiento <?= htmlspecialchars($birthInput) ?> · foco <?= htmlspecialchars($focusInput) ?></p>
+                    </div>
+                    <div class="widget-chart-shell">
+                        <div class="widget-chart-title">
+                            <strong>Curvas centradas en hoy</strong>
+                            <span>30 días · hover activo</span>
+                        </div>
+                        <svg id="widgetChart" class="widget-chart" viewBox="0 0 640 190" role="img" aria-label="Curvas de biorritmos centradas en hoy">
+                            <g id="widgetChartGrid"></g>
+                            <g id="widgetChartPaths"></g>
+                            <g id="widgetChartMarkers"></g>
+                        </svg>
+                        <div id="widgetChartTooltip" class="widget-chart-tooltip" aria-hidden="true"></div>
                     </div>
                     <div class="widget-mini-stats">
                         <div class="widget-mini-stat">
@@ -1999,71 +2322,8 @@ $seriesData = [
                 <article class="api-panel">
                     <small>Preview JSON</small>
                     <pre id="apiPreview" class="api-preview">Cargando preview...</pre>
+                    <button class="api-preview-toggle" id="apiPreviewToggle" onclick="(function(){const p=document.getElementById('apiPreview'),b=document.getElementById('apiPreviewToggle');p.classList.toggle('expanded');b.textContent=p.classList.contains('expanded')?'▲ Ocultar resto':'▼ Ver completo';})()">▼ Ver completo</button>
                 </article>
-            </div>
-        </section>
-
-        <section class="section card ritual-card">
-            <div class="ritual-head">
-                <div>
-                    <h2>Ritual diario</h2>
-                    <p>Una secuencia corta para empezar, sostener y cerrar el día.</p>
-                </div>
-                <div class="status-pill" id="ritualBadge">Foco listo</div>
-            </div>
-            <div class="ritual-grid">
-                <article class="ritual-panel">
-                    <small>Secuencia de hoy</small>
-                    <ol class="ritual-list" id="ritualLines">
-                        <li>Cargando ritual...</li>
-                        <li>...</li>
-                        <li>...</li>
-                    </ol>
-                    <div class="button-row">
-                        <button id="copyRitualBtn" type="button" class="secondary-btn">Copiar ritual</button>
-                    </div>
-                </article>
-                <article class="ritual-panel">
-                    <small>Foco del día</small>
-                    <strong id="ritualFocus">Preparando lectura</strong>
-                    <p id="ritualWhy">El ritual se construye a partir de la lectura actual y la mejor ventana de la semana.</p>
-                    <div class="decision-tags" id="ritualTags"></div>
-                    <div class="ritual-note" id="ritualNote">Corto, accionable y sin ruido: útil para arrancar con intención.</div>
-                </article>
-            </div>
-        </section>
-
-        <section class="section card story-card">
-            <div class="story-head">
-                <div>
-                    <h2>Story mode</h2>
-                    <p>La demo se narra como una secuencia de escenas, no solo como números.</p>
-                </div>
-                <div class="status-pill" id="storyProgress">Escena 1 / 4</div>
-            </div>
-            <div class="story-stage">
-                <div class="story-kicker" id="storyKicker">Inicio</div>
-                <h3 class="story-title" id="storyTitle">Tu día de foco</h3>
-                <p class="story-copy" id="storyCopy"></p>
-                <div class="story-grid">
-                    <div class="story-stat">
-                        <small>Físico</small>
-                        <strong id="storyPhysical">0.0%</strong>
-                    </div>
-                    <div class="story-stat">
-                        <small>Emocional</small>
-                        <strong id="storyEmotional">0.0%</strong>
-                    </div>
-                    <div class="story-stat">
-                        <small>Intelectual</small>
-                        <strong id="storyIntellectual">0.0%</strong>
-                    </div>
-                </div>
-                <div class="story-controls">
-                    <button id="storyPrevBtn" type="button" class="secondary-btn">Anterior</button>
-                    <button id="storyNextBtn" type="button" class="secondary-btn">Siguiente</button>
-                    <button id="storyAutoBtn" type="button" class="secondary-btn">Auto-play</button>
-                </div>
             </div>
         </section>
     </main>
@@ -2131,10 +2391,12 @@ $seriesData = [
         const storyPhysical = document.getElementById('storyPhysical');
         const storyEmotional = document.getElementById('storyEmotional');
         const storyIntellectual = document.getElementById('storyIntellectual');
-        const storyPrevBtn = document.getElementById('storyPrevBtn');
-        const storyNextBtn = document.getElementById('storyNextBtn');
         const storyAutoBtn = document.getElementById('storyAutoBtn');
+        const storySlide = document.getElementById('storySlide');
+        const storyDots = document.getElementById('storyDots');
+        const storyProgressFill = document.getElementById('storyProgressFill');
         const storyStage = document.querySelector('.story-stage');
+        const STORY_INTERVAL = 5000;
         const partnerBirthInput = document.getElementById('partnerBirthInput');
         const presetInput = document.getElementById('compatPresetInput');
         const exportCompatBtn = document.getElementById('exportCompatBtn');
@@ -2145,6 +2407,11 @@ $seriesData = [
         const compatFooter = document.getElementById('compatFooter');
         const compatSummaryPill = document.getElementById('compatSummaryPill');
         const compatPresetButtons = document.querySelectorAll('[data-compat-preset]');
+        const widgetChart = document.getElementById('widgetChart');
+        const widgetChartGrid = document.getElementById('widgetChartGrid');
+        const widgetChartPaths = document.getElementById('widgetChartPaths');
+        const widgetChartMarkers = document.getElementById('widgetChartMarkers');
+        const widgetChartTooltip = document.getElementById('widgetChartTooltip');
 
         let selectedIndex = data.selectedIndex;
         let storyIndex = 0;
@@ -2240,6 +2507,136 @@ $seriesData = [
                         path.style.strokeDashoffset = '0';
                     });
                 });
+            });
+        }
+
+        function buildCenteredWidgetPoints() {
+            const radius = 15;
+            const start = Math.max(0, data.selectedIndex - radius);
+            const end = Math.min(data.window.length - 1, data.selectedIndex + radius);
+            return data.window.slice(start, end + 1);
+        }
+
+        function buildSmoothPath(points, seriesName, widthPx, heightPx, paddingPx) {
+            const innerWidthPx = widthPx - paddingPx * 2;
+            const innerHeightPx = heightPx - paddingPx * 2;
+            const center = paddingPx + innerHeightPx / 2;
+            const coords = points.map((point, index) => ({
+                x: paddingPx + (index / Math.max(1, points.length - 1)) * innerWidthPx,
+                y: center - point[seriesName] * (innerHeightPx / 2 - 10),
+            }));
+
+            if (coords.length === 0) {
+                return '';
+            }
+
+            if (coords.length === 1) {
+                return `M ${coords[0].x} ${coords[0].y}`;
+            }
+
+            let path = `M ${coords[0].x.toFixed(2)} ${coords[0].y.toFixed(2)}`;
+            for (let index = 0; index < coords.length - 1; index += 1) {
+                const current = coords[index];
+                const next = coords[index + 1];
+                const midX = (current.x + next.x) / 2;
+                path += ` Q ${current.x.toFixed(2)} ${current.y.toFixed(2)} ${midX.toFixed(2)} ${((current.y + next.y) / 2).toFixed(2)}`;
+                path += ` T ${next.x.toFixed(2)} ${next.y.toFixed(2)}`;
+            }
+
+            return path;
+        }
+
+        function renderWidgetChartTooltip(point, x, y) {
+            if (!widgetChartTooltip) return;
+            widgetChartTooltip.innerHTML = `
+                <strong>${point.label} · ${point.date}</strong>
+                <div class="row"><span><span class="dot" style="background:${palette.physical}"></span>Físico</span><span>${(point.physical * 100).toFixed(1)}%</span></div>
+                <div class="row"><span><span class="dot" style="background:${palette.emotional}"></span>Emocional</span><span>${(point.emotional * 100).toFixed(1)}%</span></div>
+                <div class="row"><span><span class="dot" style="background:${palette.intellectual}"></span>Intelectual</span><span>${(point.intellectual * 100).toFixed(1)}%</span></div>
+            `;
+            widgetChartTooltip.style.left = `${x}px`;
+            widgetChartTooltip.style.top = `${y}px`;
+            widgetChartTooltip.classList.add('is-visible');
+            widgetChartTooltip.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideWidgetChartTooltip() {
+            if (!widgetChartTooltip) return;
+            widgetChartTooltip.classList.remove('is-visible');
+            widgetChartTooltip.setAttribute('aria-hidden', 'true');
+        }
+
+        function updateWidgetChart() {
+            if (!widgetChart || !widgetChartGrid || !widgetChartPaths || !widgetChartMarkers || !widgetChartTooltip) {
+                return;
+            }
+
+            const points = buildCenteredWidgetPoints();
+            const widthPx = 640;
+            const heightPx = 190;
+            const paddingPx = 18;
+            const innerWidthPx = widthPx - paddingPx * 2;
+            const innerHeightPx = heightPx - paddingPx * 2;
+            const centerY = paddingPx + innerHeightPx / 2;
+            const todayIndex = points.findIndex((point) => point.offset === 0);
+            const todayX = paddingPx + (todayIndex / Math.max(1, points.length - 1)) * innerWidthPx;
+
+            widgetChartGrid.innerHTML = [
+                -1, -0.5, 0, 0.5, 1,
+            ].map((value) => {
+                const y = centerY - value * (innerHeightPx / 2 - 10);
+                return `<line x1="${paddingPx}" x2="${widthPx - paddingPx}" y1="${y.toFixed(2)}" y2="${y.toFixed(2)}" class="${value === 0 ? 'zero-line' : 'grid-line'}"></line>`;
+            }).join('');
+
+            widgetChartPaths.innerHTML = `
+                <path class="series-line" stroke="${palette.physical}" d="${buildSmoothPath(points, 'physical', widthPx, heightPx, paddingPx)}"></path>
+                <path class="series-line" stroke="${palette.emotional}" d="${buildSmoothPath(points, 'emotional', widthPx, heightPx, paddingPx)}"></path>
+                <path class="series-line" stroke="${palette.intellectual}" d="${buildSmoothPath(points, 'intellectual', widthPx, heightPx, paddingPx)}"></path>
+            `;
+
+            widgetChartMarkers.innerHTML = `
+                <line x1="${todayX.toFixed(2)}" x2="${todayX.toFixed(2)}" y1="${paddingPx - 2}" y2="${heightPx - paddingPx + 2}" class="today-line"></line>
+                <circle cx="${todayX.toFixed(2)}" cy="${centerY.toFixed(2)}" r="4.8" fill="${palette.physical}" opacity="0.9"></circle>
+            `;
+
+            const tooltipPoint = points[todayIndex >= 0 ? todayIndex : Math.floor(points.length / 2)];
+            if (tooltipPoint) {
+                renderWidgetChartTooltip(tooltipPoint, todayX, paddingPx + 12);
+                widgetChartTooltip.classList.remove('is-visible');
+            }
+
+            const pointsMeta = points.map((point, index) => ({
+                point,
+                x: paddingPx + (index / Math.max(1, points.length - 1)) * innerWidthPx,
+            }));
+
+            const showPointAtClientX = (clientX) => {
+                const rect = widgetChart.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const targetX = ((x / rect.width) * widthPx);
+                let nearest = pointsMeta[0];
+                let distance = Number.POSITIVE_INFINITY;
+                pointsMeta.forEach((candidate) => {
+                    const nextDistance = Math.abs(candidate.x - targetX);
+                    if (nextDistance < distance) {
+                        distance = nextDistance;
+                        nearest = candidate;
+                    }
+                });
+
+                const tooltipX = ((nearest.x / widthPx) * rect.width);
+                const tooltipY = (paddingPx + 6) * (rect.height / heightPx);
+                renderWidgetChartTooltip(nearest.point, tooltipX, tooltipY);
+            };
+
+            widgetChart.addEventListener('pointermove', (event) => {
+                showPointAtClientX(event.clientX);
+            });
+            widgetChart.addEventListener('pointerleave', hideWidgetChartTooltip);
+            widgetChart.addEventListener('focusin', () => {
+                if (tooltipPoint) {
+                    renderWidgetChartTooltip(tooltipPoint, todayX, paddingPx + 12);
+                }
             });
         }
 
@@ -2780,10 +3177,10 @@ $seriesData = [
         }
 
         function updateStoryMode(index) {
+            stopStoryAuto();
             storyIndex = 0;
             renderStoryScene(0);
-            storyStage.classList.add('is-cinematic');
-            window.setTimeout(() => storyStage.classList.remove('is-cinematic'), 420);
+            startStoryAuto();
         }
 
         function updateCompatibility(index) {
@@ -2964,7 +3361,12 @@ $seriesData = [
             const scenes = buildStoryScenes(selectedIndex);
             storyIndex = clamp(sceneIndex, 0, scenes.length - 1);
             const scene = scenes[storyIndex];
+
             storyStage.classList.add('is-cinematic');
+            storySlide.classList.remove('is-entering');
+            void storySlide.offsetWidth;
+            storySlide.classList.add('is-entering');
+
             storyKicker.textContent = scene.kicker;
             storyTitle.textContent = scene.title;
             storyCopy.textContent = scene.copy;
@@ -2972,12 +3374,23 @@ $seriesData = [
             storyEmotional.textContent = formatSignedPercent(scene.point.emotional);
             storyIntellectual.textContent = formatSignedPercent(scene.point.intellectual);
             storyProgress.textContent = `Escena ${storyIndex + 1} / ${scenes.length}`;
-            storyPrevBtn.classList.toggle('is-active', storyIndex === 0);
-            storyNextBtn.classList.toggle('is-active', storyIndex === scenes.length - 1);
+
+            storyDots.innerHTML = scenes.map((_, i) =>
+                `<div class="story-dot${i === storyIndex ? ' is-active' : ''}"></div>`
+            ).join('');
+
+            storyProgressFill.style.transition = 'none';
+            storyProgressFill.style.width = '0%';
+            void storyProgressFill.offsetWidth;
+            if (storyTimer) {
+                storyProgressFill.style.transition = `width ${STORY_INTERVAL}ms linear`;
+                storyProgressFill.style.width = '100%';
+            }
+
             window.clearTimeout(renderStoryScene._timer);
             renderStoryScene._timer = window.setTimeout(() => {
                 storyStage.classList.remove('is-cinematic');
-            }, 320);
+            }, 400);
         }
 
         function stopStoryAuto() {
@@ -2985,21 +3398,30 @@ $seriesData = [
                 window.clearInterval(storyTimer);
                 storyTimer = null;
             }
-            storyAutoBtn.textContent = 'Auto-play';
+            storyAutoBtn.textContent = '▶ Reanudar';
+            storyProgressFill.style.transition = 'none';
+            storyProgressFill.style.width = '0%';
+        }
+
+        function startStoryAuto() {
+            if (storyTimer) window.clearInterval(storyTimer);
+            storyAutoBtn.textContent = '⏸ Pausar';
+            storyProgressFill.style.transition = `width ${STORY_INTERVAL}ms linear`;
+            storyProgressFill.style.width = '100%';
+            storyTimer = window.setInterval(() => {
+                const scenes = buildStoryScenes(selectedIndex);
+                storyIndex = (storyIndex + 1) % scenes.length;
+                renderStoryScene(storyIndex);
+            }, STORY_INTERVAL);
         }
 
         function toggleStoryAuto() {
             if (storyTimer) {
                 stopStoryAuto();
-                return;
-            }
-
-            storyAutoBtn.textContent = 'Pausar';
-            storyTimer = window.setInterval(() => {
-                const scenes = buildStoryScenes(selectedIndex);
-                storyIndex = (storyIndex + 1) % scenes.length;
+            } else {
+                startStoryAuto();
                 renderStoryScene(storyIndex);
-            }, 2400);
+            }
         }
 
         function buildShareSvg(point) {
@@ -3257,10 +3679,10 @@ $seriesData = [
 
         buildGrid();
         buildPaths();
+        updateWidgetChart();
         applyTheme(theme);
         updateWidgetEmbedSnippet();
         updateSelected(Number(slider.value));
-        renderStoryScene(0);
         animateEntrance();
         syncCompatibilityUrl();
 
@@ -3338,16 +3760,6 @@ $seriesData = [
 
         exportCompatBtn.addEventListener('click', async () => {
             await exportCompatibilityCardAsPng();
-        });
-
-        storyPrevBtn.addEventListener('click', () => {
-            renderStoryScene(storyIndex - 1);
-            stopStoryAuto();
-        });
-
-        storyNextBtn.addEventListener('click', () => {
-            renderStoryScene(storyIndex + 1);
-            stopStoryAuto();
         });
 
         storyAutoBtn.addEventListener('click', toggleStoryAuto);
