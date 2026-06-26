@@ -420,6 +420,18 @@ $seriesData = [
             color: #7a4800;
         }
 
+        /* share-preview is always dark — undo any light overrides inside it */
+        body[data-theme="light"] .share-preview .share-metric {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.10);
+        }
+
+        body[data-theme="light"] .share-preview .share-badge {
+            background: rgba(248, 201, 93, 0.08);
+            border-color: rgba(248, 201, 93, 0.18);
+            color: #ffe7a8;
+        }
+
         /* hero-callout summary arrow + text */
         body[data-theme="light"] .hero-callout summary {
             color: #7a4800;
@@ -925,6 +937,10 @@ $seriesData = [
                 radial-gradient(circle at bottom right, rgba(125, 211, 252, 0.18), transparent 32%),
                 linear-gradient(180deg, rgba(18, 28, 48, 0.94), rgba(8, 14, 27, 0.98));
             border: 1px solid rgba(255, 255, 255, 0.08);
+            /* force dark-theme vars regardless of page theme */
+            --text: #e2e8f0;
+            --muted: rgba(255, 255, 255, 0.55);
+            color: #e2e8f0;
         }
 
         .share-badge {
