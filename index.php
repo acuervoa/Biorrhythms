@@ -2121,12 +2121,37 @@ $seriesData = [
             .widget-grid,
             .forecast-strip,
             .story-grid,
-            .compat-strip,
-            .compat-heatmap-grid,
             .controls-grid,
             .stat-grid,
             .share-metrics {
                 grid-template-columns: 1fr;
+            }
+
+            /* strips always scroll horizontally — never collapse */
+            .compat-strip {
+                display: flex;
+                overflow-x: auto;
+                gap: 10px;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .compat-day {
+                flex: 0 0 120px;
+                min-width: 120px;
+            }
+
+            .compat-heatmap-grid {
+                display: flex;
+                overflow-x: auto;
+                gap: 8px;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .compat-heatmap-cell {
+                flex: 0 0 90px;
+                min-width: 90px;
             }
         }
 
@@ -2134,8 +2159,10 @@ $seriesData = [
             .shell {
                 padding: 12px 10px;
                 gap: 12px;
+                overflow-x: hidden;
             }
 
+            /* Hero */
             .hero-body {
                 flex-direction: column;
                 gap: 16px;
@@ -2156,6 +2183,10 @@ $seriesData = [
                 gap: 6px;
             }
 
+            h1 { font-size: 1.5rem; }
+            .stat strong { font-size: 1.3rem; }
+
+            /* Controls */
             .controls-grid {
                 grid-template-columns: 1fr;
                 gap: 10px;
@@ -2166,31 +2197,39 @@ $seriesData = [
                 flex-wrap: wrap;
             }
 
-            .compat-strip {
-                overflow-x: auto;
-                grid-template-columns: repeat(7, minmax(100px, 1fr));
-                padding-bottom: 8px;
+            /* Detail grid: date full width, 3 rhythms below */
+            .detail-grid {
+                grid-template-columns: 1fr;
             }
 
-            .compat-heatmap-grid {
-                overflow-x: auto;
-                grid-template-columns: repeat(7, minmax(90px, 1fr));
-                padding-bottom: 8px;
+            /* Compat */
+            .compat-score { font-size: 2.2rem; }
+
+            .compat-day {
+                flex: 0 0 110px;
+                min-width: 110px;
             }
 
-            .extreme-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
+            .compat-heatmap-cell {
+                flex: 0 0 80px;
+                min-width: 80px;
             }
 
+            /* Decision */
+            .decision-panel strong {
+                overflow-wrap: break-word;
+                word-break: break-word;
+            }
+
+            .decision-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Events */
             .event-row {
-                grid-template-columns: 80px 1fr;
+                grid-template-columns: 72px 1fr;
                 gap: 10px;
                 padding: 10px 12px;
-            }
-
-            .event-chips-row {
-                gap: 5px;
             }
 
             .event-chip {
@@ -2198,11 +2237,15 @@ $seriesData = [
                 font-size: 0.74rem;
             }
 
-            h1 { font-size: 1.5rem; }
+            /* Extreme days */
+            .extreme-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
 
-            .stat strong { font-size: 1.3rem; }
-
-            .compat-score { font-size: 2.2rem; }
+            .extreme-item-score {
+                font-size: 1.3rem;
+            }
         }
     </style>
 </head>
