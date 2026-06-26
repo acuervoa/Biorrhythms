@@ -1714,6 +1714,39 @@ $seriesData = [
             line-height: 1.55;
         }
 
+        .compat-weighted {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(125, 211, 252, 0.2);
+            background: rgba(125, 211, 252, 0.06);
+            gap: 6px;
+        }
+
+        .compat-weighted.is-visible {
+            display: grid;
+        }
+
+        .compat-weighted small {
+            color: var(--accent-2);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .compat-weighted strong {
+            font-size: 1.6rem;
+            line-height: 1;
+            color: var(--accent-2);
+        }
+
+        .compat-weighted p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
         .compat-inputs {
             display: grid;
             gap: 12px;
@@ -2065,6 +2098,11 @@ $seriesData = [
                         <button type="button" class="secondary-btn<?= $compatPresetInput === 'friend' ? ' is-active' : '' ?>" data-compat-preset="friend">Amistad</button>
                         <button type="button" class="secondary-btn<?= $compatPresetInput === 'work' ? ' is-active' : '' ?>" data-compat-preset="work">Trabajo</button>
                     </div>
+                    <div class="compat-weighted" id="compatWeighted">
+                        <small>Score contextual</small>
+                        <strong id="compatWeightedScore">—</strong>
+                        <p id="compatPresetNarrative"></p>
+                    </div>
                     <div class="compat-inputs">
                         <label>
                             Persona 2
@@ -2404,6 +2442,9 @@ $seriesData = [
         const compatHeatmap = document.getElementById('compatHeatmap');
         const compatFooter = document.getElementById('compatFooter');
         const compatSummaryPill = document.getElementById('compatSummaryPill');
+        const compatWeighted = document.getElementById('compatWeighted');
+        const compatWeightedScore = document.getElementById('compatWeightedScore');
+        const compatPresetNarrative = document.getElementById('compatPresetNarrative');
         const compatPresetButtons = document.querySelectorAll('[data-compat-preset]');
         const widgetChart = document.getElementById('widgetChart');
         const widgetChartGrid = document.getElementById('widgetChartGrid');
@@ -2729,6 +2770,19 @@ $seriesData = [
             const score = rhythms.reduce((carry, item) => carry + item.value, 0) / rhythms.length;
 
             return { score, rhythms };
+        }
+
+        const PRESET_WEIGHTS = {
+            pair:   { physical: 0.20, emotional: 0.50, intellectual: 0.30 },
+            friend: { physical: 0.25, emotional: 0.45, intellectual: 0.30 },
+            work:   { physical: 0.25, emotional: 0.20, intellectual: 0.55 },
+        };
+
+        function weightedCompatibilityScore(preset, rhythms) {
+            const w = PRESET_WEIGHTS[preset];
+            if (!w) return null;
+            const byLabel = Object.fromEntries(rhythms.map((r) => [r.label, r.value]));
+            return w.physical * byLabel['Físico'] + w.emotional * byLabel['Emocional'] + w.intellectual * byLabel['Intelectual'];
         }
 
         function normalizePartnerBirthForPreset(preset) {
@@ -3199,6 +3253,16 @@ $seriesData = [
                     ? 'Lectura mixta: hay uno o dos ritmos alineados, pero la compatibilidad depende del día.'
                     : 'Lectura baja: conviene tratar esta ventana como fase de ajuste, no de empuje.';
             compatSummaryPill.textContent = `${Math.round(best.score * 100)}% mejor día`;
+
+            const activePreset = activeCompatibilityPreset();
+            const ws = weightedCompatibilityScore(activePreset, selected.rhythms);
+            if (ws !== null) {
+                compatWeightedScore.textContent = `${Math.round(ws * 100)}%`;
+                compatPresetNarrative.textContent = presetNarrative(activePreset);
+                compatWeighted.classList.add('is-visible');
+            } else {
+                compatWeighted.classList.remove('is-visible');
+            }
 
             compatStrip.innerHTML = '';
             scored.forEach((point) => {
