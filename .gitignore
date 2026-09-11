@@ -1,2 +1,6 @@
 composer.lock
 vendor/
+
+# Caché de phpunit y copias locales de seguridad
+.phpunit.result.cache
+*.before-*
