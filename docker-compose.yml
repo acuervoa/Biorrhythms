@@ -4,6 +4,6 @@ services:
     working_dir: /app
     command: sh -lc "php -S 0.0.0.0:8002 -t ."
     ports:
-      - "8002:8002"
+      - "127.0.0.1:8002:8002"
     volumes:
       - .:/app
