@@ -21,9 +21,7 @@ class ExtremeDays
         \DateTimeImmutable $fromDate,
         float $threshold = 0.95,
     ): array {
-        $daysFromBirthToFrom = (int) round(
-            ($fromDate->getTimestamp() - $birthDate->getTimestamp()) / 86400
-        );
+        $daysFromBirthToFrom = (int) DateInput::daysBetween($birthDate, $fromDate);
         $remaining = self::CYCLE_DAYS - $daysFromBirthToFrom;
         $results   = [];
 

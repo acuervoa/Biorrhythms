@@ -40,6 +40,7 @@ docker compose down
 | `birth` | Fecha de nacimiento (YYYY-MM-DD) | `1972-09-19` |
 | `focus` | Fecha foco / día a analizar | `2026-06-26` |
 | `partner_birth` | Fecha de nacimiento de la otra persona (compatibilidad) | `1971-05-30` |
+| `extreme` | Umbral de «días extremos» (0.5–0.99, por defecto 0.95) | `0.8` |
 
 Ejemplo completo:
 
@@ -76,6 +77,20 @@ curl -i "http://localhost:8002/api/v1/?birth=2026-02-31"
 ```
 
 Fechas válidas: formato `YYYY-MM-DD`, entre `1900-01-01` y `2100-12-31`. Códigos de error: `missing_parameter`, `invalid_date`, `invalid_value`.
+
+Campos añadidos en `/api/v1/` (el legado no los incluye):
+
+| Campo | Contenido |
+|---|---|
+| `profile.phases` | Por ritmo: `period`, `day_in_cycle`, `value`, `slope` y `state` (`peak`, `valley`, `rising`, `falling`) |
+| `profile.strongest` | Ritmo de mayor magnitud con signo (`polarity`: `high`/`low`). `profile.key` sigue siendo el de mayor valor |
+| `profile.conflict` | `true` si un ritmo está ≥ +50% y otro ≤ −50% (la media puede ocultarlo) |
+| `profile.all_negative`, `profile.spread` | Los tres ritmos negativos; diferencia entre el mayor y el menor |
+| `profile.composites` | `passion` (físico+emocional), `wisdom` (emocional+intelectual), `mastery` (los tres) |
+| `critical_days` | Cruces por cero de hoy a +45 días; `kind`: `single`, `double` o `triple` |
+| `extreme_days` | Solo si se pasa `extreme`; incluye `threshold` y la lista de días |
+
+Un cruce por cero se asigna al día cuya ventana [d−0.5, d+0.5) lo contiene (los de periodo impar, 23 y 33, caen en medios días y se redondean hacia arriba).
 
 Devuelve un JSON con: ventana de 90 días, scores por ritmo, forecast 7 días, ritual diario, compatibilidad y metadatos.
 

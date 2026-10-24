@@ -120,7 +120,18 @@ if ($compatPresetInput !== 'custom') {
 $apiUrl = '/api/?' . http_build_query($apiLinkParams + ['pretty' => '1'], '', '&', PHP_QUERY_RFC3986);
 $apiSnippet = 'curl -s "' . $apiUrl . '" | jq';
 
-$extremeDays = ExtremeDays::find($bio, $birthDate, $focusDate);
+// Extreme-day threshold (share of the mean, 0.5-0.99). Default 0.95 keeps the original list.
+$extremeThreshold = 0.95;
+$rawExtreme       = $_GET['extreme'] ?? null;
+if ($rawExtreme !== null && $rawExtreme !== '') {
+    if (is_string($rawExtreme) && is_numeric($rawExtreme) && (float) $rawExtreme >= 0.5 && (float) $rawExtreme <= 0.99) {
+        $extremeThreshold = (float) $rawExtreme;
+    } else {
+        $inputNotices[] = '«extreme» debe ser un número entre 0.5 y 0.99. Se usa 0.95.';
+    }
+}
+$extremePercent = (int) round($extremeThreshold * 100);
+$extremeDays    = ExtremeDays::find($bio, $birthDate, $focusDate, $extremeThreshold);
 
 $seriesData = [
     'windowRadius' => $windowRadius,
@@ -2690,7 +2701,7 @@ $seriesData = [
             <div class="extreme-head">
                 <div>
                     <h2>Días extremos</h2>
-                    <p>Días futuros con media superior al +95% o inferior al −95%.</p>
+                    <p>Días futuros con media superior al +<?= $extremePercent ?>% o inferior al −<?= $extremePercent ?>%.</p>
                 </div>
                 <div class="status-pill" id="extremePill">—</div>
             </div>
