@@ -226,13 +226,23 @@ $seriesData = [
             --stroke: rgba(16, 24, 40, 0.12);
             --text: #18202b;
             --muted: #516174;
-            --physical: #f05f3b;
-            --emotional: #249a79;
-            --intellectual: #1976d2;
-            --accent: #c78827;
+            --physical: #b83c23;
+            --emotional: #176b54;
+            --intellectual: #145aa3;
+            --accent: #815000;
         }
 
         * { box-sizing: border-box; }
+
+        :focus-visible {
+            outline: 3px solid var(--focus-ring, var(--accent));
+            outline-offset: 3px;
+        }
+
+        ::selection {
+            color: var(--bg);
+            background: var(--accent);
+        }
 
         body {
             margin: 0;
@@ -244,7 +254,13 @@ $seriesData = [
                 radial-gradient(circle at bottom center, rgba(110, 231, 183, 0.12), transparent 25%),
                 linear-gradient(160deg, #040812 0%, #07111f 45%, #0c172a 100%);
             font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+            font-size: 16px;
+            line-height: 1.55;
         }
+
+        p { max-width: 72ch; }
+
+        h1, h2, h3 { text-wrap: balance; }
 
         body[data-theme="light"] {
             background:
@@ -253,6 +269,8 @@ $seriesData = [
                 radial-gradient(circle at bottom center, rgba(36, 154, 121, 0.14), transparent 24%),
                 linear-gradient(160deg, #fdf8f2 0%, #f5f3ee 45%, #e7ecf6 100%);
         }
+
+        body[data-theme="light"] { --focus-ring: #145aa3; }
 
         .shell {
             width: min(1180px, calc(100% - 32px));
@@ -270,17 +288,11 @@ $seriesData = [
             border-radius: 24px;
             background: linear-gradient(180deg, var(--panel), var(--panel-strong));
             box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(14px);
         }
 
         body[data-theme="light"] .card {
             box-shadow: 0 4px 24px rgba(17, 24, 39, 0.10);
             border-color: rgba(16, 24, 40, 0.14);
-        }
-
-        /* Light theme: muted text contrast */
-        body[data-theme="light"] {
-            --muted: #3d5168;
         }
 
         /* Fix all white-tinted surfaces → dark-tinted */
@@ -873,6 +885,27 @@ $seriesData = [
         input[type="range"] {
             width: 100%;
             accent-color: var(--accent);
+            min-height: 32px;
+            cursor: pointer;
+        }
+
+        .chart-text-alternative {
+            margin: 12px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation: none !important;
+                transition: none !important;
+            }
+
+            .hero-main, .controls, .panel, .detail, .share-card {
+                opacity: 1 !important;
+                transform: none !important;
+            }
         }
 
         .chart {
@@ -983,7 +1016,7 @@ $seriesData = [
         .disclaimer {
             margin: 0 0 18px;
             color: var(--muted);
-            font-size: 0.84rem;
+            font-size: 0.875rem;
             line-height: 1.5;
         }
 
@@ -1000,9 +1033,9 @@ $seriesData = [
             background: rgba(255, 255, 255, 0.03);
         }
 
-        .context-item small { display: block; color: var(--muted); font-size: 0.78rem; }
+        .context-item small { display: block; color: var(--muted); font-size: 0.875rem; }
         .context-item strong { display: block; margin: 4px 0; font-size: 1.15rem; }
-        .context-item p { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.4; }
+        .context-item p { margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.4; }
 
         .month-nav {
             display: flex;
@@ -1012,36 +1045,56 @@ $seriesData = [
         }
 
         .month-grid {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: 6px;
-            margin-top: 16px;
+            width: 100%;
+            margin: 10px 0 0;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 6px;
         }
+
+        .month-calendar-scroll { max-width: 100%; overflow-x: auto; }
 
         .month-dow {
             text-align: center;
             color: var(--muted);
-            font-size: 0.74rem;
-            padding-bottom: 2px;
+            font-size: 0.875rem;
+            padding: 0 0 2px;
         }
 
         .month-cell {
-            min-height: 58px;
-            padding: 6px 8px;
+            height: 58px;
+            padding: 0;
             border: 1px solid var(--stroke);
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.03);
-            font-size: 0.78rem;
+            font-size: 0.875rem;
             line-height: 1.3;
+        }
+
+        .month-cell-link {
+            display: block;
+            min-height: 56px;
+            padding: 6px 8px;
+            color: inherit;
+            text-decoration: none;
         }
 
         .month-cell strong { display: block; font-size: 0.92rem; }
         .month-cell[data-level="high"] { background: rgba(110, 231, 183, 0.18); border-color: rgba(110, 231, 183, 0.55); }
         .month-cell[data-level="mid"]  { background: rgba(248, 201, 93, 0.14); border-color: rgba(248, 201, 93, 0.45); }
         .month-cell[data-level="low"]  { background: rgba(255, 123, 84, 0.16); border-color: rgba(255, 123, 84, 0.5); }
-        .month-cell.is-focus { outline: 2px solid var(--text); outline-offset: 1px; }
+        .month-cell-link.is-focus { outline: 2px solid var(--text); outline-offset: 1px; }
         .month-cell.is-pad { background: transparent; border-color: transparent; }
-        .month-legend { margin: 12px 0 0; color: var(--muted); font-size: 0.8rem; }
+        .month-legend { margin: 12px 0 0; color: var(--muted); font-size: 0.875rem; }
+
+        .widget-data-details { margin-top: 10px; }
+        .widget-data-details summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
+        .widget-data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        .widget-data-table th, .widget-data-table td { padding: 8px; border-bottom: 1px solid var(--stroke); text-align: start; }
+
+        @media (max-width: 520px) {
+            .month-grid { min-width: 420px; }
+        }
 
         .diary-form {
             display: flex;
@@ -2043,7 +2096,7 @@ $seriesData = [
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            font-size: 0.72rem;
+            font-size: 0.875rem;
         }
 
         .story-stat strong {
@@ -2092,8 +2145,9 @@ $seriesData = [
         }
 
         .story-pause-btn {
-            font-size: 0.8rem;
-            padding: 6px 14px;
+            min-height: 44px;
+            font-size: 0.875rem;
+            padding: 8px 14px;
         }
 
         .story-progress-bar {
@@ -2107,8 +2161,9 @@ $seriesData = [
         .story-progress-fill {
             height: 100%;
             background: rgba(248, 201, 93, 0.6);
-            width: 0%;
-            transition: width linear;
+            transform: scaleX(0);
+            transform-origin: left center;
+            transition: transform linear;
         }
 
         .compat-card {
@@ -2672,7 +2727,7 @@ $seriesData = [
         <section class="hero">
             <article class="card hero-main">
                 <div class="hero-topline">
-                    <div class="kicker">Biorrhythms</div>
+                    <div class="kicker">Biorritmos</div>
                     <button id="themeToggleBtn" type="button" class="theme-toggle">Tema claro</button>
                 </div>
                 <div class="hero-body">
@@ -2756,10 +2811,10 @@ $seriesData = [
                 <button type="submit" class="bar-submit">Actualizar vista</button>
             </form>
             <div class="bar-slider">
-                <small>Vista rápida</small>
-                <input id="windowSlider" type="range" min="0" max="<?= (int) (count($window) - 1) ?>" value="<?= $selectedIndex ?>">
-                <div class="footer-note" id="selectedLabel">
-                    <?= htmlspecialchars($selectedPoint['label']) ?> · offset <?= (int) $selectedPoint['offset'] ?> días
+                <label for="windowSlider">Vista rápida</label>
+                <input id="windowSlider" type="range" min="0" max="<?= (int) (count($window) - 1) ?>" value="<?= $selectedIndex ?>" aria-describedby="selectedLabel">
+                <div class="footer-note" id="selectedLabel" aria-live="polite">
+                    <?= htmlspecialchars($selectedPoint['label']) ?> · desviación <?= (int) $selectedPoint['offset'] ?> días
                 </div>
             </div>
         </section>
@@ -2773,7 +2828,7 @@ $seriesData = [
         <section class="section card panel chart-wrap">
             <div class="panel-head">
                 <div>
-                    <h2>Timeline viva</h2>
+                    <h2>Ritmos en el tiempo</h2>
                     <p>La línea central es cero. Arriba es energía positiva; abajo, fase baja.</p>
                 </div>
                 <div class="button-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -2788,7 +2843,7 @@ $seriesData = [
                 </div>
             </div>
 
-            <svg class="chart" viewBox="0 0 1100 420" role="img" aria-label="Timeline de biorritmos">
+            <svg class="chart" viewBox="0 0 1100 420" role="img" aria-label="Gráfico de líneas de los ritmos físico, emocional e intelectual a lo largo del tiempo. La línea central representa cero; por encima, valores positivos; por debajo, valores negativos.">
                 <defs>
                     <linearGradient id="bgFade" x1="0" x2="1">
                         <stop offset="0%" stop-color="rgba(255,255,255,0.05)"></stop>
@@ -2806,13 +2861,14 @@ $seriesData = [
                 <span><i class="dot" style="background: var(--emotional)"></i> Emocional</span>
                 <span><i class="dot" style="background: var(--intellectual)"></i> Intelectual</span>
             </div>
+            <p class="chart-text-alternative">El gráfico muestra la evolución diaria de los tres ritmos alrededor de cero. Los valores del día seleccionado se presentan como porcentajes en las tarjetas de resumen.</p>
         </section>
 
         <section class="section detail-grid">
             <article class="detail">
                 <small>Día de foco</small>
                 <strong id="detail-date"><?= htmlspecialchars($selectedPoint['label']) ?></strong>
-                <em id="detail-offset">Offset <?= (int) $selectedPoint['offset'] ?> días</em>
+                <em id="detail-offset">Desviación <?= (int) $selectedPoint['offset'] ?> días</em>
             </article>
             <article class="detail">
                 <small>Físico</small>
@@ -2984,26 +3040,34 @@ $seriesData = [
                     <a class="secondary-btn" href="<?= htmlspecialchars($icsLink) ?>" download>Días críticos (.ics)</a>
                 </div>
             </div>
-            <div class="month-grid" role="table" aria-label="Calendario de <?= htmlspecialchars($month['label']) ?>">
+            <div class="month-calendar-scroll" role="region" aria-label="Calendario mensual desplazable" tabindex="0">
+            <table class="month-grid" aria-label="Calendario de <?= htmlspecialchars($month['label']) ?>">
+                <thead><tr>
 <?php foreach (['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as $dow): ?>
-                <div class="month-dow" role="columnheader"><?= $dow ?></div>
+                    <th class="month-dow" scope="col"><?= $dow ?></th>
 <?php endforeach; ?>
+                </tr></thead>
+                <tbody>
 <?php foreach ($month['weeks'] as $week): ?>
+                <tr>
 <?php foreach ($week as $cell): ?>
 <?php if ($cell === null): ?>
-                <div class="month-cell is-pad" aria-hidden="true"></div>
+                    <td class="month-cell is-pad" aria-hidden="true"></td>
 <?php else: ?>
-                <a class="month-cell<?= $cell['is_focus'] ? ' is-focus' : '' ?>" data-level="<?= htmlspecialchars($cell['level']) ?>"
-                   style="color:inherit;text-decoration:none"
-                   href="<?= htmlspecialchars($monthLink($cell['date'])) ?>"
-                   aria-label="<?= htmlspecialchars($cell['day'] . ', media ' . round($cell['avg'] * 100) . '%' . ($cell['critical'] > 0 ? ', día crítico ' . ['', 'simple', 'doble', 'triple'][$cell['critical']] : '')) ?>">
-                    <strong><?= (int) $cell['day'] ?></strong>
-                    <?= (int) round($cell['avg'] * 100) ?>%<?= $cell['critical'] > 0 ? ' ' . str_repeat('●', $cell['critical']) : '' ?>
-
-                </a>
+                    <td class="month-cell" data-level="<?= htmlspecialchars($cell['level']) ?>">
+                        <a class="month-cell-link<?= $cell['is_focus'] ? ' is-focus' : '' ?>"
+                           href="<?= htmlspecialchars($monthLink($cell['date'])) ?>"
+                           aria-label="Día <?= (int) $cell['day'] ?>, media <?= round($cell['avg'] * 100) ?>%<?= $cell['critical'] > 0 ? ', día crítico ' . ['', 'simple', 'doble', 'triple'][$cell['critical']] : '' ?>">
+                            <strong><?= (int) $cell['day'] ?></strong>
+                            <span class="month-average" aria-hidden="true"><?= (int) round($cell['avg'] * 100) ?>%</span><?= $cell['critical'] > 0 ? ' ' . str_repeat('●', $cell['critical']) : '' ?>
+                        </a>
+                    </td>
 <?php endif; ?>
 <?php endforeach; ?>
+                </tr>
 <?php endforeach; ?>
+                </tbody>
+            </table>
             </div>
             <p class="month-legend">
                 Verde: media ≥ +35% · Ámbar: entre −15% y +35% · Rojo: por debajo de −15%. ● = ritmos que cruzan cero ese día (1 simple, 2 doble, 3 triple).
@@ -3129,7 +3193,7 @@ $seriesData = [
                 </div>
                 <div class="story-footer">
                     <div class="story-dots" id="storyDots"></div>
-                    <button id="storyAutoBtn" type="button" class="secondary-btn story-pause-btn">⏸ Pausar</button>
+                    <button id="storyAutoBtn" type="button" class="secondary-btn story-pause-btn">Reanudar reproducción</button>
                 </div>
                 <div class="story-progress-bar"><div class="story-progress-fill" id="storyProgressFill"></div></div>
             </div>
@@ -3137,7 +3201,7 @@ $seriesData = [
 
         <section class="section card share-card">
             <div class="share-preview" id="sharePreview">
-                <div class="share-badge">Share card</div>
+                <div class="share-badge">Tarjeta para compartir</div>
                 <h2 class="share-title" id="shareTitle"><?= htmlspecialchars($profileLabel) ?></h2>
                 <p class="share-subtitle" id="shareSubtitle">
                     <?= htmlspecialchars($selectedPoint['label']) ?> · nacimiento <?= htmlspecialchars($birthInput) ?> · foco <?= htmlspecialchars($focusInput) ?>
@@ -3193,13 +3257,24 @@ $seriesData = [
                     <div class="widget-chart-shell">
                         <div class="widget-chart-title">
                             <strong>Curvas centradas en hoy</strong>
-                            <span>30 días · hover activo</span>
+                            <span>31 días · detalle al pasar el puntero</span>
                         </div>
                         <svg id="widgetChart" class="widget-chart" viewBox="0 0 640 190" role="img" aria-label="Curvas de biorritmos centradas en hoy">
                             <g id="widgetChartGrid"></g>
                             <g id="widgetChartPaths"></g>
                             <g id="widgetChartMarkers"></g>
                         </svg>
+                        <p class="chart-text-alternative">El gráfico compara los tres ritmos durante 31 días. Sus valores del día de foco aparecen en las tarjetas que siguen.</p>
+                        <details class="widget-data-details">
+                            <summary>Consultar los valores diarios del gráfico</summary>
+                            <table class="widget-data-table">
+                                <caption>Valores diarios de los ritmos durante los 31 días centrados en hoy</caption>
+                                <thead>
+                                    <tr><th scope="col">Día</th><th scope="col">Físico</th><th scope="col">Emocional</th><th scope="col">Intelectual</th></tr>
+                                </thead>
+                                <tbody id="widgetChartData"></tbody>
+                            </table>
+                        </details>
                         <div id="widgetChartTooltip" class="widget-chart-tooltip" aria-hidden="true"></div>
                     </div>
                     <div class="widget-mini-stats">
@@ -3279,6 +3354,7 @@ $seriesData = [
         };
 
         const data = <?= json_encode($seriesData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const birthInput = <?= json_encode($birthInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const focusInput = <?= json_encode($focusInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const partnerBirthInputInitial = <?= json_encode($partnerBirthInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
@@ -3355,6 +3431,7 @@ $seriesData = [
         const widgetChartPaths = document.getElementById('widgetChartPaths');
         const widgetChartMarkers = document.getElementById('widgetChartMarkers');
         const widgetChartTooltip = document.getElementById('widgetChartTooltip');
+        const widgetChartData = document.getElementById('widgetChartData');
 
         let selectedIndex = data.selectedIndex;
         let storyIndex = 0;
@@ -3465,6 +3542,7 @@ $seriesData = [
                 pathsGroup.appendChild(path);
             });
 
+            if (reducedMotion) return;
             requestAnimationFrame(() => {
                 document.querySelectorAll('.path').forEach((path) => {
                     const length = path.getTotalLength();
@@ -3540,6 +3618,24 @@ $seriesData = [
             }
 
             const points = buildCenteredWidgetPoints();
+            if (widgetChartData) {
+                const rows = document.createDocumentFragment();
+                points.forEach((point) => {
+                    const row = document.createElement('tr');
+                    const day = document.createElement('th');
+                    day.scope = 'row';
+                    day.textContent = `${point.label} · ${point.date}`;
+                    row.appendChild(day);
+                    ['physical', 'emotional', 'intellectual'].forEach((rhythm) => {
+                        const value = document.createElement('td');
+                        value.textContent = formatSignedPercent(point[rhythm]);
+                        row.appendChild(value);
+                    });
+                    rows.appendChild(row);
+                });
+                widgetChartData.replaceChildren(rows);
+            }
+
             const widthPx = 640;
             const heightPx = 190;
             const paddingPx = 18;
@@ -3612,12 +3708,12 @@ $seriesData = [
             selectedIndex = index;
             const point = data.window[index];
             const focusLabel = point.physical >= point.emotional && point.physical >= point.intellectual
-                ? 'Physical peak'
+                ? 'Pico físico'
                 : point.emotional >= point.physical && point.emotional >= point.intellectual
-                    ? 'Emotional peak'
-                    : 'Mental peak';
+                    ? 'Pico emocional'
+                    : 'Pico intelectual';
             document.getElementById('detail-date').textContent = point.label;
-            document.getElementById('detail-offset').textContent = `Offset ${point.offset} días`;
+            document.getElementById('detail-offset').textContent = `Desviación ${point.offset} días`;
             document.getElementById('detail-physical').textContent = `${(point.physical * 100).toFixed(1)}%`;
             document.getElementById('detail-emotional').textContent = `${(point.emotional * 100).toFixed(1)}%`;
             document.getElementById('detail-intellectual').textContent = `${(point.intellectual * 100).toFixed(1)}%`;
@@ -3649,7 +3745,7 @@ $seriesData = [
                 markersGroup.lastChild.textContent = point.label;
             }
 
-            document.getElementById('selectedLabel').textContent = `${point.label} · offset ${point.offset} días`;
+            document.getElementById('selectedLabel').textContent = `${point.label} · desviación ${point.offset} días`;
             updateForecast(index);
         }
 
@@ -4166,7 +4262,6 @@ $seriesData = [
             stopStoryAuto();
             storyIndex = 0;
             renderStoryScene(0);
-            startStoryAuto();
         }
 
         function updateCompatibility(index) {
@@ -4359,10 +4454,12 @@ $seriesData = [
             storyIndex = clamp(sceneIndex, 0, scenes.length - 1);
             const scene = scenes[storyIndex];
 
-            storyStage.classList.add('is-cinematic');
-            storySlide.classList.remove('is-entering');
-            void storySlide.offsetWidth;
-            storySlide.classList.add('is-entering');
+            storyStage.classList.toggle('is-cinematic', !reducedMotion);
+            if (!reducedMotion) {
+                storySlide.classList.remove('is-entering');
+                void storySlide.offsetWidth;
+                storySlide.classList.add('is-entering');
+            }
 
             storyKicker.textContent = scene.kicker;
             storyTitle.textContent = scene.title;
@@ -4377,11 +4474,11 @@ $seriesData = [
             ).join('');
 
             storyProgressFill.style.transition = 'none';
-            storyProgressFill.style.width = '0%';
-            void storyProgressFill.offsetWidth;
+            storyProgressFill.style.transform = 'scaleX(0)';
+            if (!reducedMotion) void storyProgressFill.offsetWidth;
             if (storyTimer) {
-                storyProgressFill.style.transition = `width ${STORY_INTERVAL}ms linear`;
-                storyProgressFill.style.width = '100%';
+                storyProgressFill.style.transition = `transform ${STORY_INTERVAL}ms linear`;
+                storyProgressFill.style.transform = 'scaleX(1)';
             }
 
             window.clearTimeout(renderStoryScene._timer);
@@ -4395,16 +4492,16 @@ $seriesData = [
                 window.clearInterval(storyTimer);
                 storyTimer = null;
             }
-            storyAutoBtn.textContent = '▶ Reanudar';
+            storyAutoBtn.textContent = 'Reanudar reproducción';
             storyProgressFill.style.transition = 'none';
-            storyProgressFill.style.width = '0%';
+            storyProgressFill.style.transform = 'scaleX(0)';
         }
 
         function startStoryAuto() {
             if (storyTimer) window.clearInterval(storyTimer);
-            storyAutoBtn.textContent = '⏸ Pausar';
-            storyProgressFill.style.transition = `width ${STORY_INTERVAL}ms linear`;
-            storyProgressFill.style.width = '100%';
+            storyAutoBtn.textContent = 'Pausar reproducción';
+            storyProgressFill.style.transition = `transform ${STORY_INTERVAL}ms linear`;
+            storyProgressFill.style.transform = 'scaleX(1)';
             storyTimer = window.setInterval(() => {
                 const scenes = buildStoryScenes(selectedIndex);
                 storyIndex = (storyIndex + 1) % scenes.length;
@@ -4425,10 +4522,10 @@ $seriesData = [
             const width = 1200;
             const height = 630;
             const headline = point.physical >= point.emotional && point.physical >= point.intellectual
-                ? 'Physical peak'
+                ? 'Pico físico'
                 : point.emotional >= point.physical && point.emotional >= point.intellectual
-                    ? 'Emotional peak'
-                    : 'Mental peak';
+                    ? 'Pico emocional'
+                    : 'Pico intelectual';
 
             return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
@@ -4467,7 +4564,7 @@ $seriesData = [
   <text x="724" y="300" class="small">Intelectual</text>
   <text x="724" y="346" class="value">${(point.intellectual * 100).toFixed(1)}%</text>
   <line x1="84" y1="416" x2="1116" y2="416" stroke="rgba(255,255,255,0.16)"/>
-  <text x="84" y="470" class="small">Timeline viva · vista local · exportable a PNG</text>
+  <text x="84" y="470" class="small">Ritmos en el tiempo · vista local · exportable a PNG</text>
   <text x="84" y="520" class="label">Focus</text>
   <text x="84" y="564" class="sub">${selectedPointPayload().label}</text>
   <text x="404" y="520" class="label">Status</text>
@@ -4546,13 +4643,13 @@ $seriesData = [
             ctx.strokeStyle = 'rgba(248, 201, 93, 0.22)';
             ctx.stroke();
             ctx.fillStyle = '#ffe7a8';
-            ctx.fillText(theme === 'light' ? 'LIGHT THEME' : 'DARK THEME', 908, 109);
+            ctx.fillText(theme === 'light' ? 'TEMA CLARO' : 'TEMA OSCURO', 908, 109);
 
             const mainHeadline = point.physical >= point.emotional && point.physical >= point.intellectual
-                ? 'Physical peak'
+                ? 'Pico físico'
                 : point.emotional >= point.physical && point.emotional >= point.intellectual
-                    ? 'Emotional peak'
-                    : 'Mental peak';
+                    ? 'Pico emocional'
+                    : 'Pico intelectual';
 
             ctx.fillStyle = '#ecf2ff';
             ctx.font = '700 60px Georgia, serif';
@@ -4642,7 +4739,7 @@ $seriesData = [
 
             ctx.fillStyle = '#9bb0d0';
             ctx.font = '400 20px Georgia, serif';
-            ctx.fillText('Timeline viva · vista local · exportable a PNG', 84, 512);
+            ctx.fillText('Ritmos en el tiempo · vista local · exportable a PNG', 84, 512);
             ctx.fillStyle = '#ecf2ff';
             ctx.font = '700 18px Arial, sans-serif';
             ctx.fillText('FOCUS', 84, 548);
@@ -4711,8 +4808,15 @@ $seriesData = [
         animateEntrance();
         syncCompatibilityUrl();
 
+        let sliderFrame = 0;
+        let pendingSliderIndex = Number(slider.value);
         slider.addEventListener('input', (event) => {
-            updateSelected(Number(event.target.value));
+            pendingSliderIndex = Number(event.target.value);
+            if (sliderFrame) return;
+            sliderFrame = window.requestAnimationFrame(() => {
+                sliderFrame = 0;
+                updateSelected(pendingSliderIndex);
+            });
         });
 
         jumpToTodayBtn.addEventListener('click', () => {
