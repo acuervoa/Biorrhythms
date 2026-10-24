@@ -50,4 +50,25 @@ class Forecast
             'physical',
         );
     }
+
+    /** Gap between the highest and lowest rhythm of a point, in [0, 2]. */
+    public static function spread(array $point): float
+    {
+        $values = [$point['physical'], $point['emotional'], $point['intellectual']];
+
+        return max($values) - min($values);
+    }
+
+    /** Rhythms pulling opposite ways: one clearly high (>= 0.5) and another clearly low (<= -0.5). */
+    public static function hasConflict(array $point): bool
+    {
+        $values = [$point['physical'], $point['emotional'], $point['intellectual']];
+
+        return max($values) >= 0.5 && min($values) <= -0.5;
+    }
+
+    public static function allNegative(array $point): bool
+    {
+        return max($point['physical'], $point['emotional'], $point['intellectual']) < 0.0;
+    }
 }

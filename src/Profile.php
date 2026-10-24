@@ -24,6 +24,24 @@ class Profile
         return Forecast::dominantKey($point);
     }
 
+    /**
+     * Rhythm with the largest magnitude, regardless of sign. key() picks the highest value instead,
+     * which for an all-negative day is merely the least negative rhythm.
+     *
+     * @return array{key: string, polarity: string} polarity: 'high' (>= 0) | 'low' (< 0)
+     */
+    public static function strongest(array $point): array
+    {
+        $best = 'physical';
+        foreach (['emotional', 'intellectual'] as $key) {
+            if (abs($point[$key]) > abs($point[$best])) {
+                $best = $key;
+            }
+        }
+
+        return ['key' => $best, 'polarity' => $point[$best] >= 0.0 ? 'high' : 'low'];
+    }
+
     public static function labelEs(array $point): string
     {
         return self::LABELS_ES[self::key($point)];
