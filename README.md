@@ -54,13 +54,28 @@ http://localhost:8002/?birth=1972-09-19&focus=2026-06-26&partner_birth=1971-05-3
 | Ruta | Descripción |
 |---|---|
 | `/` | App principal |
-| `/api/` | Endpoint JSON (mismos parámetros de URL) |
+| `/api/v1/` | Endpoint JSON estricto (recomendado) |
+| `/api/` | Endpoint JSON legado (obsoleto) |
 
 ### API
 
+Hay dos endpoints:
+
+| Endpoint | Estado | Comportamiento |
+|---|---|---|
+| `/api/v1/` | Recomendado | Estricto: fechas inválidas o ausentes devuelven **400** con un JSON de error. `birth` es obligatorio; `focus` por defecto es hoy; `partner_birth` es opcional (sin él `compatibility` es `null`). Acepta `preset` (`pair`, `friend`, `work`, `custom`). `profile.key` es estable (`physical`, `emotional`, `intellectual`) y `profile.label` está en español. |
+| `/api/` | Obsoleto (`Deprecation: true`) | Sin cambios de contrato: las fechas inválidas o ausentes caen a valores por defecto sin avisar (`birth=1990-01-01`, `partner_birth=1991-01-01`) y el label va en inglés. |
+
 ```bash
-curl "http://localhost:8002/api/?birth=1972-09-19&focus=2026-06-26&pretty=1"
+curl "http://localhost:8002/api/v1/?birth=1972-09-19&focus=2026-06-26&pretty=1"
+
+# Error de validación
+curl -i "http://localhost:8002/api/v1/?birth=2026-02-31"
+# HTTP/1.1 400 Bad Request
+# {"error":{"code":"invalid_date","field":"birth","message":"..."}}
 ```
+
+Fechas válidas: formato `YYYY-MM-DD`, entre `1900-01-01` y `2100-12-31`. Códigos de error: `missing_parameter`, `invalid_date`, `invalid_value`.
 
 Devuelve un JSON con: ventana de 90 días, scores por ritmo, forecast 7 días, ritual diario, compatibilidad y metadatos.
 
@@ -118,7 +133,8 @@ Biorrhythms/
 ├── api/
 │   └── index.php      # Endpoint JSON
 ├── src/
-│   └── Biorrhythms.php  # Lógica de cálculo (sin dependencias)
+│   └── *.php            # Lógica de cálculo, fechas, API (sin dependencias)
+├── api/v1/index.php   # Endpoint JSON estricto
 ├── docker-compose.yml
 └── README.md
 ```
