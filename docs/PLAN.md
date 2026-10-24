@@ -4,6 +4,18 @@
 > Origen: auditoría de código y producto (sin cambios aplicados).
 > Convención: un commit por tarea, una rama por fase. Sin commits ni push sin petición explícita.
 
+## Estado
+
+| Fase | Estado | Release |
+|---|---|---|
+| 0 | Hecha | v1.1.1 |
+| A | Hecha | v1.2.0 |
+| B | Hecha | v1.3.0 |
+| C | Hecha (ver notas) | v1.4.0 |
+| D, E | Pendientes | — |
+
+Notas de la Fase C: el ritual de la web y de `/api/v1/` sale ya del mismo código PHP (`Ritual::daily`), y `/api/` conserva `Ritual::generate`. La compatibilidad con pesos y tendencia (C7) se expone en `/api/v1/`; la web mantiene su cálculo con `PRESET_WEIGHTS`, que coincide con los pesos de PHP. Fuera de alcance según decisión: efemérides y ciclo menstrual.
+
 Los puntos marcados como **hipótesis** en la auditoría se verifican en la Fase 0 antes de decidir alcance.
 
 ---

@@ -7,10 +7,15 @@ require_once __DIR__ . '/src/autoload.php';
 use Biorrhythms\ApiPayload;
 use Biorrhythms\Biorrhythms;
 use Biorrhythms\Compatibility;
+use Biorrhythms\DailyReading;
 use Biorrhythms\DateInput;
 use Biorrhythms\ExtremeDays;
+use Biorrhythms\Lunar;
+use Biorrhythms\MonthCalendar;
+use Biorrhythms\Numerology;
 use Biorrhythms\Profile;
 use Biorrhythms\Timeline;
+use Biorrhythms\Zodiac;
 
 function valueToPercent(float $value): string
 {
@@ -133,6 +138,34 @@ if ($rawExtreme !== null && $rawExtreme !== '') {
 $extremePercent = (int) round($extremeThreshold * 100);
 $extremeDays    = ExtremeDays::find($bio, $birthDate, $focusDate, $extremeThreshold);
 
+// One daily ritual per window point, built by the same code as /api/v1/ (web and API cannot diverge).
+$rituals = array_map(
+    static fn (array $point): array => DailyReading::forDate($birthDate, DateInput::parse($point['date']), $window)['ritual'],
+    $window,
+);
+
+$focusReading  = DailyReading::forDate($birthDate, $focusDate, $window);
+$personal      = $focusReading['personal'];
+$sunSign       = Zodiac::sunSign($birthDate);
+$lifePath      = Numerology::lifePath($birthDate);
+$lifePathInfo  = Numerology::meaning($lifePath);
+$moon          = Lunar::phase($focusDate);
+$birthIsExample = ($_GET['birth'] ?? '') === '';
+
+$month       = MonthCalendar::build($birthDate, $focusDate);
+$prevMonth   = $focusDate->modify('first day of previous month')->format('Y-m-d');
+$nextMonth   = $focusDate->modify('first day of next month')->format('Y-m-d');
+$monthLink   = static fn (string $focus): string => '?' . http_build_query(
+    array_filter([
+        'birth' => $birthInput, 'focus' => $focus, 'partner_birth' => $partnerBirthInput,
+        'preset' => $compatPresetInput === 'custom' ? null : $compatPresetInput,
+    ]),
+    '',
+    '&',
+    PHP_QUERY_RFC3986,
+);
+$icsLink = 'calendar.php?' . http_build_query(['birth' => $birthInput, 'from' => $focusInput, 'days' => 90], '', '&', PHP_QUERY_RFC3986);
+
 $seriesData = [
     'windowRadius' => $windowRadius,
     'window' => $window,
@@ -145,6 +178,7 @@ $seriesData = [
     'compatPresetInput' => $compatPresetInput,
     'focusCompatibility' => $focusCompatibility,
     'extremeDays' => $extremeDays,
+    'rituals' => $rituals,
 ];
 ?>
 <!doctype html>
@@ -941,6 +975,96 @@ $seriesData = [
 
         .input-notice p { margin: 0; }
         .input-notice p + p { margin-top: 6px; }
+
+        .disclaimer {
+            margin: 0 0 18px;
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
+        .context-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 12px;
+        }
+
+        .context-item {
+            padding: 14px 16px;
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .context-item small { display: block; color: var(--muted); font-size: 0.78rem; }
+        .context-item strong { display: block; margin: 4px 0; font-size: 1.15rem; }
+        .context-item p { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.4; }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 16px;
+        }
+
+        .month-dow {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.74rem;
+            padding-bottom: 2px;
+        }
+
+        .month-cell {
+            min-height: 58px;
+            padding: 6px 8px;
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 0.78rem;
+            line-height: 1.3;
+        }
+
+        .month-cell strong { display: block; font-size: 0.92rem; }
+        .month-cell[data-level="high"] { background: rgba(110, 231, 183, 0.18); border-color: rgba(110, 231, 183, 0.55); }
+        .month-cell[data-level="mid"]  { background: rgba(248, 201, 93, 0.14); border-color: rgba(248, 201, 93, 0.45); }
+        .month-cell[data-level="low"]  { background: rgba(255, 123, 84, 0.16); border-color: rgba(255, 123, 84, 0.5); }
+        .month-cell.is-focus { outline: 2px solid var(--text); outline-offset: 1px; }
+        .month-cell.is-pad { background: transparent; border-color: transparent; }
+        .month-legend { margin: 12px 0 0; color: var(--muted); font-size: 0.8rem; }
+
+        .diary-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 14px;
+        }
+
+        .diary-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; color: var(--muted); }
+        .diary-form select,
+        .diary-form input[type="date"] {
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--stroke);
+            background: var(--panel-strong);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .diary-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
+        .diary-actions label.secondary-btn { font: inherit; display: inline-flex; align-items: center; }
+        .diary-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 8px; }
+        .diary-table th,
+        .diary-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--stroke); }
+        .diary-table th { color: var(--muted); font-weight: 600; font-size: 0.78rem; }
+        .diary-caveat { margin: 12px 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
 
         .footer-note {
             margin-top: 14px;
@@ -2625,6 +2749,12 @@ $seriesData = [
             </div>
         </section>
 
+        <p class="disclaimer">
+            Los biorritmos son un modelo clásico sin validez predictiva demostrada (Hines, 1998, <em>Psychological Reports</em> 83).
+            Úsalos como marco de reflexión y autoobservación, no para decisiones médicas, financieras o legales.
+            La numerología y la astrología de esta página son marcos simbólicos, no evidencia empírica.
+        </p>
+
         <section class="section card panel chart-wrap">
             <div class="panel-head">
                 <div>
@@ -2793,6 +2923,119 @@ $seriesData = [
                     <div class="decision-tags" id="ritualTags"></div>
                     <div class="ritual-note" id="ritualNote">Corto, accionable y sin ruido: útil para arrancar con intención.</div>
                 </article>
+            </div>
+        </section>
+
+        <section class="section card extreme-card" id="context">
+            <div class="extreme-head">
+                <div>
+                    <h2>Contexto del día</h2>
+                    <p>Marco simbólico para la fecha de foco (<?= htmlspecialchars($focusInput) ?>). Es orientativo, no predictivo.</p>
+                </div>
+            </div>
+            <div class="context-grid">
+                <div class="context-item">
+                    <small>Signo solar</small>
+                    <strong><?= htmlspecialchars($sunSign['name']) ?></strong>
+                    <p><?= htmlspecialchars($sunSign['element'] . ' · ' . $sunSign['modality']) ?><?= $sunSign['cusp'] ? ' · cúspide: el cambio de signo varía ±1 día según el año' : '' ?></p>
+                </div>
+                <div class="context-item">
+                    <small>Camino de vida</small>
+                    <strong><?= (int) $lifePath ?> · <?= htmlspecialchars($lifePathInfo['name']) ?></strong>
+                    <p><?= htmlspecialchars($lifePathInfo['keywords']) ?></p>
+                </div>
+                <div class="context-item">
+                    <small>Día personal</small>
+                    <strong><?= (int) $personal['day'] ?> · <?= htmlspecialchars(Numerology::meaning($personal['day'])['name']) ?></strong>
+                    <p>Mes <?= (int) $personal['month'] ?> · año <?= (int) $personal['year'] ?>. <?= htmlspecialchars(Numerology::meaning($personal['day'])['keywords']) ?></p>
+                </div>
+                <div class="context-item">
+                    <small>Fase lunar</small>
+                    <strong><?= htmlspecialchars($moon['name']) ?></strong>
+                    <p>Iluminación ≈ <?= (int) round($moon['illumination'] * 100) ?>% · edad ≈ <?= number_format($moon['age_days'], 1, '.', '') ?> días (precisión de ±1 día).</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section card extreme-card" id="monthCalendar">
+            <div class="extreme-head">
+                <div>
+                    <h2>Calendario de <?= htmlspecialchars($month['label']) ?></h2>
+                    <p>Media diaria de los tres ritmos y días críticos (cruces por cero).</p>
+                </div>
+                <div class="month-nav">
+                    <a class="secondary-btn" href="<?= htmlspecialchars($monthLink($prevMonth)) ?>">← Mes anterior</a>
+                    <a class="secondary-btn" href="<?= htmlspecialchars($monthLink($nextMonth)) ?>">Mes siguiente →</a>
+                    <a class="secondary-btn" href="<?= htmlspecialchars($icsLink) ?>" download>Días críticos (.ics)</a>
+                </div>
+            </div>
+            <div class="month-grid" role="table" aria-label="Calendario de <?= htmlspecialchars($month['label']) ?>">
+<?php foreach (['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as $dow): ?>
+                <div class="month-dow" role="columnheader"><?= $dow ?></div>
+<?php endforeach; ?>
+<?php foreach ($month['weeks'] as $week): ?>
+<?php foreach ($week as $cell): ?>
+<?php if ($cell === null): ?>
+                <div class="month-cell is-pad" aria-hidden="true"></div>
+<?php else: ?>
+                <a class="month-cell<?= $cell['is_focus'] ? ' is-focus' : '' ?>" data-level="<?= htmlspecialchars($cell['level']) ?>"
+                   style="color:inherit;text-decoration:none"
+                   href="<?= htmlspecialchars($monthLink($cell['date'])) ?>"
+                   aria-label="<?= htmlspecialchars($cell['day'] . ', media ' . round($cell['avg'] * 100) . '%' . ($cell['critical'] > 0 ? ', día crítico ' . ['', 'simple', 'doble', 'triple'][$cell['critical']] : '')) ?>">
+                    <strong><?= (int) $cell['day'] ?></strong>
+                    <?= (int) round($cell['avg'] * 100) ?>%<?= $cell['critical'] > 0 ? ' ' . str_repeat('●', $cell['critical']) : '' ?>
+
+                </a>
+<?php endif; ?>
+<?php endforeach; ?>
+<?php endforeach; ?>
+            </div>
+            <p class="month-legend">
+                Verde: media ≥ +35% · Ámbar: entre −15% y +35% · Rojo: por debajo de −15%. ● = ritmos que cruzan cero ese día (1 simple, 2 doble, 3 triple).
+            </p>
+        </section>
+
+        <section class="section card extreme-card" id="diary">
+            <div class="extreme-head">
+                <div>
+                    <h2>Diario de autoobservación</h2>
+                    <p>Anota cómo te encuentras (1 = bajo, 5 = alto) y comprueba si tus datos siguen las curvas. Se guarda solo en este navegador.</p>
+                </div>
+                <div class="status-pill" id="diaryCount">0 registros</div>
+            </div>
+            <form class="diary-form" id="diaryForm" autocomplete="off">
+                <label>Día
+                    <input type="date" id="diaryDate" value="<?= htmlspecialchars($focusInput) ?>" min="<?= DateInput::MIN ?>" max="<?= DateInput::MAX ?>" required>
+                </label>
+                <label>Energía física
+                    <select id="diaryEnergy"><?php foreach ([1, 2, 3, 4, 5] as $n): ?><option value="<?= $n ?>"<?= $n === 3 ? ' selected' : '' ?>><?= $n ?></option><?php endforeach; ?></select>
+                </label>
+                <label>Estado de ánimo
+                    <select id="diaryMood"><?php foreach ([1, 2, 3, 4, 5] as $n): ?><option value="<?= $n ?>"<?= $n === 3 ? ' selected' : '' ?>><?= $n ?></option><?php endforeach; ?></select>
+                </label>
+                <label>Claridad mental
+                    <select id="diaryFocus"><?php foreach ([1, 2, 3, 4, 5] as $n): ?><option value="<?= $n ?>"<?= $n === 3 ? ' selected' : '' ?>><?= $n ?></option><?php endforeach; ?></select>
+                </label>
+                <button type="submit" class="bar-submit">Guardar día</button>
+            </form>
+            <div class="footer-note" id="diaryStatus" role="status"></div>
+<?php if ($birthIsExample): ?>
+            <p class="diary-caveat">Estás usando la fecha de ejemplo (<?= htmlspecialchars($defaultBirth) ?>): la correlación solo tiene sentido con tu fecha real.</p>
+<?php endif; ?>
+            <table class="diary-table" id="diaryTable">
+                <thead><tr><th>Curva ↔ lo que anotas</th><th>Registros</th><th>Correlación (r)</th><th>IC 95%</th><th>Lectura</th></tr></thead>
+                <tbody id="diaryRows"></tbody>
+            </table>
+            <p class="diary-caveat">
+                Se necesitan al menos 14 registros por ritmo. La correlación no implica causa. Los días consecutivos no son independientes,
+                así que el intervalo es optimista. Con pocos datos, el resultado es sobre todo ruido: «sin relación apreciable» es un resultado válido.
+            </p>
+            <div class="diary-actions">
+                <button type="button" class="secondary-btn" id="diaryExport">Exportar JSON</button>
+                <label class="secondary-btn" style="cursor:pointer">Importar JSON
+                    <input type="file" id="diaryImport" accept="application/json,.json" hidden>
+                </label>
+                <button type="button" class="secondary-btn" id="diaryForget">Olvidar mis datos</button>
             </div>
         </section>
 
@@ -3456,29 +3699,6 @@ $seriesData = [
             return candidates.reduce((carry, item) => (item.value > carry.value ? item : carry), candidates[0]);
         }
 
-        function ritualForPoint(point, forecastWindow) {
-            const currentDecision = decisionForPoint(point);
-            const dominant = dominantSeries(point);
-            const best = forecastWindow.reduce((carry, item) => (averageSeries(item) > averageSeries(carry) ? item : carry), forecastWindow[0]);
-            const worst = forecastWindow.reduce((carry, item) => (averageSeries(item) < averageSeries(carry) ? item : carry), forecastWindow[0]);
-            const bestDecision = decisionForPoint(best);
-
-            const lines = [
-                `Empieza con ${currentDecision.action.toLowerCase()}.`,
-                `Reserva ${best.label} para la tarea más importante y evita empujar en ${worst.label}.`,
-                `Cierra con una revisión breve y una pausa consciente para no arrastrar la curva al final del día.`,
-            ];
-
-            return {
-                badge: dominant.label,
-                focus: `${dominant.label} marca el tono de hoy.`,
-                why: `${currentDecision.why} La mejor ventana de la semana cae en ${best.label}, donde conviene usar ${bestDecision.action.toLowerCase()}.`,
-                lines,
-                tags: [dominant.label, best.label, worst.label],
-                note: `Ritual de 3 pasos para un día con foco en ${dominant.label.toLowerCase()} y cierre limpio.`,
-            };
-        }
-
         function decisionForPoint(point) {
             const avg = averageSeries(point);
             const dominant = dominantSeries(point);
@@ -3606,8 +3826,7 @@ $seriesData = [
         }
 
         function updateRitual(index) {
-            const forecastWindow = forecastSliceFrom(index);
-            const ritual = ritualForPoint(data.window[index], forecastWindow);
+            const ritual = data.rituals[index];
 
             ritualBadge.textContent = ritual.badge;
             ritualFocus.textContent = ritual.focus;
@@ -4497,6 +4716,113 @@ $seriesData = [
         });
 
         storyAutoBtn.addEventListener('click', toggleStoryAuto);
+    </script>
+    <script src="assets/diary.js"></script>
+    <script>
+        (function () {
+            const D = window.BiorrhythmsDiary;
+            const form = document.getElementById('diaryForm');
+            if (!D || !form) return;
+
+            const rows = document.getElementById('diaryRows');
+            const count = document.getElementById('diaryCount');
+            const status = document.getElementById('diaryStatus');
+            const labels = { physical: 'Físico ↔ energía', emotional: 'Emocional ↔ ánimo', intellectual: 'Intelectual ↔ claridad' };
+            const forgetBtn = document.getElementById('diaryForget');
+            let entries = D.load(window.localStorage);
+            let forgetArmed = null;
+
+            function say(message) { status.textContent = message; }
+
+            function cell(text) {
+                const td = document.createElement('td');
+                td.textContent = text;
+                return td;
+            }
+
+            function fmt(value) { return (value >= 0 ? '+' : '') + value.toFixed(2); }
+
+            function render() {
+                const total = Object.keys(entries).length;
+                count.textContent = total === 1 ? '1 registro' : total + ' registros';
+                rows.replaceChildren();
+                D.correlations(entries, birthInput).forEach((row) => {
+                    const tr = document.createElement('tr');
+                    tr.appendChild(cell(labels[row.rhythm]));
+                    tr.appendChild(cell(String(row.n)));
+                    if (row.status === 'insufficient') {
+                        tr.appendChild(cell('—'));
+                        tr.appendChild(cell('—'));
+                        tr.appendChild(cell('Faltan ' + row.missing + ' registros'));
+                    } else if (row.status === 'flat') {
+                        tr.appendChild(cell('—'));
+                        tr.appendChild(cell('—'));
+                        tr.appendChild(cell('Respuestas constantes: no se puede calcular'));
+                    } else {
+                        tr.appendChild(cell(fmt(row.r)));
+                        tr.appendChild(cell(row.ci ? fmt(row.ci[0]) + ' a ' + fmt(row.ci[1]) : '—'));
+                        tr.appendChild(cell(row.label));
+                    }
+                    rows.appendChild(tr);
+                });
+            }
+
+            function persist(message) {
+                say(D.save(window.localStorage, entries) ? message : message + ' (no se pudo guardar en este navegador)');
+                render();
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const date = document.getElementById('diaryDate').value;
+                const entry = D.normalizeEntry({
+                    energy: Number(document.getElementById('diaryEnergy').value),
+                    mood: Number(document.getElementById('diaryMood').value),
+                    focus: Number(document.getElementById('diaryFocus').value),
+                });
+                if (!D.parseIso(date) || !entry) { say('Fecha o valores no válidos.'); return; }
+                const existed = Object.prototype.hasOwnProperty.call(entries, date);
+                entries[date] = entry;
+                persist(existed ? 'Registro de ' + date + ' actualizado.' : 'Registro de ' + date + ' guardado.');
+            });
+
+            document.getElementById('diaryExport').addEventListener('click', () => {
+                const blob = new Blob([D.serialize(entries)], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'biorritmos-diario.json';
+                link.click();
+                URL.revokeObjectURL(link.href);
+                say('Diario exportado.');
+            });
+
+            document.getElementById('diaryImport').addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                event.target.value = '';
+                if (!file) return;
+                const result = D.parseImport(await file.text());
+                if (result.error) { say('No se importó nada: ' + result.error + '.'); return; }
+                Object.assign(entries, result.entries);
+                persist('Importados ' + result.accepted + ' registros' + (result.rejected ? ' (' + result.rejected + ' descartados por no ser válidos)' : '') + '.');
+            });
+
+            forgetBtn.addEventListener('click', () => {
+                if (forgetArmed === null) {
+                    forgetBtn.textContent = 'Confirmar: borrar todo';
+                    forgetArmed = window.setTimeout(() => { forgetArmed = null; forgetBtn.textContent = 'Olvidar mis datos'; }, 5000);
+                    return;
+                }
+                window.clearTimeout(forgetArmed);
+                forgetArmed = null;
+                forgetBtn.textContent = 'Olvidar mis datos';
+                entries = {};
+                D.clear(window.localStorage);
+                say('Diario borrado de este navegador.');
+                render();
+            });
+
+            render();
+        })();
     </script>
 </body>
 </html>

@@ -95,4 +95,47 @@ class ApiPayload
             'worst_day' => $worst,
         ];
     }
+
+    /**
+     * v1-only compatibility additions: preset weights, per-rhythm trend agreement and a day-by-day sync map.
+     *
+     * @return array{preset: string, weights: array, weighted_score: float, trend_agreement: array, sync_map: list<array>}
+     */
+    public static function compatibilityExtras(
+        \DateTimeImmutable $birth,
+        \DateTimeImmutable $partner,
+        \DateTimeImmutable $focus,
+        string $preset,
+    ): array {
+        $bio     = new Biorrhythms();
+        $a       = Timeline::values($bio, $birth, $focus);
+        $b       = Timeline::values($bio, $partner, $focus);
+        $slopesA = [];
+        $slopesB = [];
+        foreach (array_keys(Rhythm::PERIODS) as $key) {
+            $slopesA[$key] = Rhythm::phase($key, DateInput::daysBetween($birth, $focus))['slope'];
+            $slopesB[$key] = Rhythm::phase($key, DateInput::daysBetween($partner, $focus))['slope'];
+        }
+
+        $syncMap = [];
+        for ($offset = -self::WINDOW_RADIUS; $offset <= self::WINDOW_RADIUS; $offset++) {
+            $date = $focus->modify(sprintf('%+d day', $offset));
+            $pa   = Timeline::values($bio, $birth, $date);
+            $pb   = Timeline::values($bio, $partner, $date);
+
+            $syncMap[] = [
+                'date'           => $date->format('Y-m-d'),
+                'score'          => Compatibility::pointScore($pa, $pb),
+                'weighted_score' => Compatibility::weightedScore($pa, $pb, $preset),
+            ];
+        }
+
+        return [
+            'preset'          => $preset,
+            'weights'         => Compatibility::weights($preset),
+            'weighted_score'  => Compatibility::weightedScore($a, $b, $preset),
+            'trend_agreement' => Compatibility::trendAgreement($slopesA, $slopesB),
+            'sync_map'        => $syncMap,
+        ];
+    }
 }
