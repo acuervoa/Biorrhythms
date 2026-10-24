@@ -24,3 +24,6 @@ jobs:
 
       - name: Run tests
         run: ./vendor/bin/phpunit --testdox
+
+      - name: Run JS tests
+        run: node --test tests/js/*.test.js

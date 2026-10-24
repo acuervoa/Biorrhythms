@@ -132,6 +132,15 @@ Fechas futuras donde la media de los 3 ritmos supera el +95% o cae por debajo de
 **Modo compatibilidad**
 Compara los biorritmos de dos personas. Muestra score de compatibilidad diaria, heatmap semanal y desglose por ritmo con barras en el color de cada ritmo.
 
+**Contexto del día**
+Signo solar (con aviso de cúspide), camino de vida, día personal numerológico y fase lunar aproximada (±1 día) para la fecha de foco. Es un marco simbólico, no evidencia empírica.
+
+**Calendario mensual**
+Cuadrícula del mes con la media diaria (verde, ámbar, rojo, y el porcentaje en texto) y los días críticos simples, dobles y triples. Descarga `.ics` (`/calendar.php?birth=…&from=…&days=90&min=1`) para llevar los días críticos a tu calendario.
+
+**Diario de autoobservación**
+Registro diario de energía, ánimo y claridad (1–5) guardado solo en el navegador (`localStorage`), con exportar/importar JSON y «olvidar mis datos». Calcula la correlación de Pearson con cada curva (mínimo 14 registros) con su intervalo de confianza al 95 %, y avisa cuando no hay relación o los datos son constantes.
+
 **Tarjeta compartible**
 Genera una imagen PNG con el resumen del día, exportable.
 
@@ -158,6 +167,7 @@ Biorrhythms/
 
 ## Notas técnicas
 
+- Tests: `docker run --rm -v "$PWD":/app -w /app php:8.3-cli-alpine php vendor/bin/phpunit` (PHP) y `node --test tests/js/*.test.js` (diario)
 - PHP 8.3 sobre Alpine Linux (imagen `php:8.3-cli-alpine`)
 - Servidor de desarrollo integrado: `php -S 0.0.0.0:8002`
 - No apto para producción sin un servidor web real (nginx/apache) delante
