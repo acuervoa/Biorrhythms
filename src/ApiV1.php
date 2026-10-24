@@ -7,6 +7,9 @@ namespace Biorrhythms;
 /** Strict /api/v1/ endpoint: invalid input is a 400, never a silent default. */
 class ApiV1
 {
+    private const EXTREME_MIN = 0.5;
+    private const EXTREME_MAX = 0.99;
+
     /**
      * @return array{0: int, 1: array} HTTP status and JSON body
      */
@@ -35,7 +38,24 @@ class ApiV1
             return [400, self::error('invalid_value', 'preset', 'preset debe ser uno de: ' . implode(', ', ApiPayload::PRESETS) . '.')];
         }
 
+        $extreme = null;
+        $rawExtreme = $query['extreme'] ?? null;
+        if ($rawExtreme !== null && $rawExtreme !== '') {
+            if (!is_string($rawExtreme) || !is_numeric($rawExtreme)
+                || (float) $rawExtreme < self::EXTREME_MIN || (float) $rawExtreme > self::EXTREME_MAX) {
+                return [400, self::error('invalid_value', 'extreme', sprintf('extreme debe ser un número entre %s y %s.', self::EXTREME_MIN, self::EXTREME_MAX))];
+            }
+            $extreme = (float) $rawExtreme;
+        }
+
         $individual = ApiPayload::individual($birth, $focus);
+        $selected   = $individual['selected'];
+        $horizon    = $focus->modify('+' . ApiPayload::WINDOW_RADIUS . ' day');
+
+        $phases = [];
+        foreach (array_keys(Rhythm::PERIODS) as $key) {
+            $phases[$key] = Rhythm::phase($key, DateInput::daysBetween($birth, $focus));
+        }
 
         $appLinkParams = ['birth' => $birth->format('Y-m-d'), 'focus' => $focus->format('Y-m-d')];
         if ($partner !== null) {
@@ -46,7 +66,7 @@ class ApiV1
         }
         $widgetLinkParams = $appLinkParams + ['embed' => '1'];
 
-        return [200, [
+        $body = [
             'meta' => [
                 'generated_at'  => $now->format(DATE_ATOM),
                 'birth'         => $birth->format('Y-m-d'),
@@ -56,11 +76,18 @@ class ApiV1
                 'window_radius' => ApiPayload::WINDOW_RADIUS,
             ],
             'profile' => [
-                'key'          => Profile::key($individual['selected']),
-                'label'        => Profile::labelEs($individual['selected']),
-                'selected'     => $individual['selected'],
+                'key'          => Profile::key($selected),
+                'label'        => Profile::labelEs($selected),
+                'strongest'    => Profile::strongest($selected),
+                'all_negative' => Forecast::allNegative($selected),
+                'conflict'     => Forecast::hasConflict($selected),
+                'spread'       => Forecast::spread($selected),
+                'composites'   => Composites::values($selected),
+                'phases'       => $phases,
+                'selected'     => $selected,
                 'focus_values' => $individual['focus_values'],
             ],
+            'critical_days' => CriticalDays::find($birth, $focus, $horizon),
             'timeline' => ['window' => $individual['window']],
             'forecast' => [
                 'days'      => $individual['forecast'],
@@ -79,7 +106,16 @@ class ApiV1
                 'app'    => '/?' . http_build_query($appLinkParams, '', '&', PHP_QUERY_RFC3986),
                 'widget' => '/?' . http_build_query($widgetLinkParams, '', '&', PHP_QUERY_RFC3986),
             ],
-        ]];
+        ];
+
+        if ($extreme !== null) {
+            $body['extreme_days'] = [
+                'threshold' => $extreme,
+                'days'      => ExtremeDays::find(new Biorrhythms(), $birth, $focus, $extreme),
+            ];
+        }
+
+        return [200, $body];
     }
 
     private static function requiredDate(array $query, string $field, ?array &$error): ?\DateTimeImmutable

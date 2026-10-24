@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Biorrhythms\ApiV1;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ApiV1Test extends TestCase
@@ -122,5 +123,65 @@ class ApiV1Test extends TestCase
         [$status] = ApiV1::handle(['birth' => '1990-01-01', 'pretty' => '1', 'foo' => 'bar'], $this->now);
 
         $this->assertSame(200, $status);
+    }
+
+    public function testProfileExposesPhaseConflictAndComposites(): void
+    {
+        [, $body] = ApiV1::handle(['birth' => '1972-09-19', 'focus' => '2026-06-26'], $this->now);
+        $profile = $body['profile'];
+
+        $this->assertSame(['physical', 'emotional', 'intellectual'], array_keys($profile['phases']));
+        $this->assertSame(23, $profile['phases']['physical']['period']);
+        $this->assertContains($profile['phases']['emotional']['state'], ['peak', 'valley', 'rising', 'falling']);
+        $this->assertIsBool($profile['conflict']);
+        $this->assertIsBool($profile['all_negative']);
+        $this->assertGreaterThanOrEqual(0.0, $profile['spread']);
+        $this->assertSame(['passion', 'wisdom', 'mastery'], array_keys($profile['composites']));
+        $this->assertContains($profile['strongest']['polarity'], ['high', 'low']);
+        $this->assertSame($profile['key'], 'emotional');
+    }
+
+    public function testStrongestReflectsMagnitudeNotSign(): void
+    {
+        // On 2026-06-26 physical is -0.89, the largest magnitude, while emotional is the highest value.
+        [, $body] = ApiV1::handle(['birth' => '1972-09-19', 'focus' => '2026-06-26'], $this->now);
+
+        $this->assertSame('physical', $body['profile']['strongest']['key']);
+        $this->assertSame('low', $body['profile']['strongest']['polarity']);
+        $this->assertTrue($body['profile']['conflict']);
+    }
+
+    public function testCriticalDaysCoverFocusToHorizon(): void
+    {
+        [, $body] = ApiV1::handle(['birth' => '1990-01-01', 'focus' => '1990-01-01'], $this->now);
+
+        $this->assertSame('1990-01-01', $body['critical_days'][0]['date']);
+        $this->assertSame('triple', $body['critical_days'][0]['kind']);
+        $this->assertLessThanOrEqual('1990-02-15', end($body['critical_days'])['date']);
+    }
+
+    public function testExtremeDaysOnlyWhenRequested(): void
+    {
+        [, $without] = ApiV1::handle(['birth' => '1990-01-01'], $this->now);
+        [$status, $with] = ApiV1::handle(['birth' => '1990-01-01', 'extreme' => '0.8'], $this->now);
+
+        $this->assertArrayNotHasKey('extreme_days', $without);
+        $this->assertSame(200, $status);
+        $this->assertSame(0.8, $with['extreme_days']['threshold']);
+        $this->assertNotEmpty($with['extreme_days']['days']);
+    }
+
+    #[DataProvider('badExtreme')]
+    public function testInvalidExtremeIs400(mixed $value): void
+    {
+        [$status, $body] = ApiV1::handle(['birth' => '1990-01-01', 'extreme' => $value], $this->now);
+
+        $this->assertSame(400, $status);
+        $this->assertSame('extreme', $body['error']['field']);
+    }
+
+    public static function badExtreme(): array
+    {
+        return [['abc'], ['0.4'], ['1'], ['-0.9'], [['0.9']]];
     }
 }
