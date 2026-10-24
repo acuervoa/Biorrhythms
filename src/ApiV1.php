@@ -51,6 +51,8 @@ class ApiV1
         $individual = ApiPayload::individual($birth, $focus);
         $selected   = $individual['selected'];
         $horizon    = $focus->modify('+' . ApiPayload::WINDOW_RADIUS . ' day');
+        $reading    = DailyReading::forDate($birth, $focus, $individual['window']);
+        $personal   = $reading['personal'];
 
         $phases = [];
         foreach (array_keys(Rhythm::PERIODS) as $key) {
@@ -94,14 +96,26 @@ class ApiV1
                 'best_day'  => $individual['best'],
                 'worst_day' => $individual['worst'],
             ],
-            'ritual'        => $individual['ritual'],
+            'ritual'           => $reading['ritual'],
+            'calendar_context' => [
+                'sun_sign'   => Zodiac::sunSign($birth),
+                'life_path'  => ['number' => Numerology::lifePath($birth)] + Numerology::meaning(Numerology::lifePath($birth)),
+                'personal'   => $personal + [
+                    'year_name'    => Numerology::meaning($personal['year'])['name'],
+                    'month_name'   => Numerology::meaning($personal['month'])['name'],
+                    'day_name'     => Numerology::meaning($personal['day'])['name'],
+                    'day_keywords' => Numerology::meaning($personal['day'])['keywords'],
+                ],
+                'moon'       => Lunar::phase($focus),
+                'birth_moon' => Lunar::phase($birth),
+            ],
             'compatibility' => $partner === null ? null : ApiPayload::compatibility(
                 $birth,
                 $partner,
                 $focus,
                 $individual['focus_values'],
                 $individual['forecast'],
-            ),
+            ) + ApiPayload::compatibilityExtras($birth, $partner, $focus, $preset),
             'links' => [
                 'app'    => '/?' . http_build_query($appLinkParams, '', '&', PHP_QUERY_RFC3986),
                 'widget' => '/?' . http_build_query($widgetLinkParams, '', '&', PHP_QUERY_RFC3986),

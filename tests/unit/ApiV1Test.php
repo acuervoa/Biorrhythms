@@ -184,4 +184,43 @@ class ApiV1Test extends TestCase
     {
         return [['abc'], ['0.4'], ['1'], ['-0.9'], [['0.9']]];
     }
+
+    public function testCalendarContextIsPresent(): void
+    {
+        [, $body] = ApiV1::handle(['birth' => '1972-09-19', 'focus' => '2026-10-24'], $this->now);
+        $ctx = $body['calendar_context'];
+
+        $this->assertSame('Virgo', $ctx['sun_sign']['name']);
+        $this->assertSame(11, $ctx['life_path']['number']);
+        $this->assertSame('Intuición', $ctx['life_path']['name']);
+        $this->assertSame(9, $ctx['personal']['day']);
+        $this->assertSame('Cierre', $ctx['personal']['day_name']);
+        $this->assertArrayHasKey('name', $ctx['moon']);
+        $this->assertArrayHasKey('name', $ctx['birth_moon']);
+    }
+
+    public function testRitualIsTheDailyVariantWithPersonalDay(): void
+    {
+        [, $body] = ApiV1::handle(['birth' => '1972-09-19', 'focus' => '2026-10-24'], $this->now);
+
+        $this->assertContains('Día personal 9', $body['ritual']['tags']);
+    }
+
+    public function testCompatibilityExtrasWithPresetWeights(): void
+    {
+        [, $body] = ApiV1::handle(
+            ['birth' => '1972-09-19', 'focus' => '2026-10-24', 'partner_birth' => '1971-05-30', 'preset' => 'work'],
+            $this->now,
+        );
+        $c = $body['compatibility'];
+
+        $this->assertSame('work', $c['preset']);
+        $this->assertSame(['physical' => 0.25, 'emotional' => 0.20, 'intellectual' => 0.55], $c['weights']);
+        $this->assertGreaterThanOrEqual(0.0, $c['weighted_score']);
+        $this->assertLessThanOrEqual(1.0, $c['weighted_score']);
+        $this->assertSame(['physical', 'emotional', 'intellectual'], array_keys($c['trend_agreement']));
+        $this->assertCount(91, $c['sync_map']);
+        $this->assertSame(['date', 'score', 'weighted_score'], array_keys($c['sync_map'][0]));
+        $this->assertSame('2026-10-24', $c['sync_map'][45]['date']);
+    }
 }
