@@ -12,9 +12,12 @@
 | A | Hecha | v1.2.0 |
 | B | Hecha | v1.3.0 |
 | C | Hecha (ver notas) | v1.4.0 |
-| D, E | Pendientes | — |
+| D | Hecha (ver notas) | v1.5.0 |
+| E | Pendiente (opcional) | — |
 
 Notas de la Fase C: el ritual de la web y de `/api/v1/` sale ya del mismo código PHP (`Ritual::daily`), y `/api/` conserva `Ritual::generate`. La compatibilidad con pesos y tendencia (C7) se expone en `/api/v1/`; la web mantiene su cálculo con `PRESET_WEIGHTS`, que coincide con los pesos de PHP. Fuera de alcance según decisión: efemérides y ciclo menstrual.
+
+Notas de la Fase D: el cuestionario de cronotipo es una adaptación propia (no se pudo verificar la redacción literal del rMEQ; sí su rango 4–25 y los grupos 4–11 / 12–17 / 18–25). Los avisos son locales y solo aparecen al abrir la app. El backlog v1.2.0 (localStorage, formulario de primera visita, «olvidar», manifest, service worker) queda cubierto.
 
 Los puntos marcados como **hipótesis** en la auditoría se verifican en la Fase 0 antes de decidir alcance.
 

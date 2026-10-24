@@ -141,6 +141,15 @@ Cuadrícula del mes con la media diaria (verde, ámbar, rojo, y el porcentaje en
 **Diario de autoobservación**
 Registro diario de energía, ánimo y claridad (1–5) guardado solo en el navegador (`localStorage`), con exportar/importar JSON y «olvidar mis datos». Calcula la correlación de Pearson con cada curva (mínimo 14 registros) con su intervalo de confianza al 95 %, y avisa cuando no hay relación o los datos son constantes.
 
+**Cronotipo y ritmo del día**
+Con tu hora de despertar propone una plantilla orientativa (luz, ventanas de foco, valle postprandial, último café, bajar luces, acostarse) y bloques de trabajo de 90 min. Incluye un cuestionario corto de cronotipo: es una adaptación propia inspirada en el rMEQ (Adan y Almirall, 1991), con su mismo rango (4–25) y tres grupos, pero **no** es el instrumento validado ni un diagnóstico.
+
+**Datos guardados y avisos**
+La fecha de nacimiento, el cronotipo, la hora de despertar y las preferencias se guardan solo en el navegador (`localStorage`). Una primera visita muestra un formulario de bienvenida; las siguientes recuperan tu fecha sin parámetros de URL. «Olvidar mi fecha y preferencias» lo borra todo. Los avisos de días críticos usan la API de notificaciones del navegador y **solo aparecen al abrir la app** el día crítico o la víspera (no hay servidor que envíe avisos en segundo plano).
+
+**App instalable (PWA)**
+`manifest.webmanifest` y `sw.js`: se puede añadir a la pantalla de inicio. Los scripts e iconos se precachean; las páginas van «red primero» (la lectura es siempre del día actual) y, sin conexión, se sirve la última copia de esa página o un aviso de «Sin conexión». `/api/` y `calendar.php` nunca pasan por el service worker. Si cambias un archivo precacheado, sube `VERSION` en `sw.js`.
+
 **Tarjeta compartible**
 Genera una imagen PNG con el resumen del día, exportable.
 
