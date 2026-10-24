@@ -2,34 +2,15 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/src/Biorrhythms.php';
-require_once __DIR__ . '/src/Compatibility.php';
-require_once __DIR__ . '/src/ExtremeDays.php';
-require_once __DIR__ . '/src/DateFormatter.php';
+require_once __DIR__ . '/src/autoload.php';
 
+use Biorrhythms\ApiPayload;
 use Biorrhythms\Biorrhythms;
 use Biorrhythms\Compatibility;
+use Biorrhythms\DateInput;
 use Biorrhythms\ExtremeDays;
-use Biorrhythms\DateFormatter;
-
-function clampDateInput(?string $value, string $fallback): string
-{
-    if ($value === null || $value === '') {
-        return $fallback;
-    }
-
-    $date = DateTimeImmutable::createFromFormat('Y-m-d', $value);
-    if ($date === false) {
-        return $fallback;
-    }
-
-    return $date->format('Y-m-d');
-}
-
-function daysBetween(DateTimeImmutable $from, DateTimeImmutable $to): float
-{
-    return ($to->getTimestamp() - $from->getTimestamp()) / 86400;
-}
+use Biorrhythms\Profile;
+use Biorrhythms\Timeline;
 
 function valueToPercent(float $value): string
 {
@@ -44,60 +25,64 @@ function valueToSignedPercent(float $value): string
 }
 
 
-$birthInput = clampDateInput($_GET['birth'] ?? null, '1990-01-01');
-$focusInput = clampDateInput($_GET['focus'] ?? null, (new DateTimeImmutable('today'))->format('Y-m-d'));
-$compatPresetInput = $_GET['preset'] ?? 'custom';
-$compatPresetInput = in_array($compatPresetInput, ['pair', 'friend', 'work', 'custom'], true) ? $compatPresetInput : 'custom';
-$embedMode = ($_GET['embed'] ?? '') === '1' || ($_GET['view'] ?? '') === 'widget';
-$widgetTheme = ($_GET['theme'] ?? 'dark') === 'light' ? 'light' : 'dark';
+$defaultBirth   = '1990-01-01';
+$defaultPartner = '1991-01-01';
+$todayInput     = (new DateTimeImmutable('today'))->format('Y-m-d');
 
-$birthDate = new DateTimeImmutable($birthInput);
-$focusDate = new DateTimeImmutable($focusInput);
-$partnerBirthInput = clampDateInput($_GET['partner_birth'] ?? null, '1991-01-01');
-$partnerBirthDate = new DateTimeImmutable($partnerBirthInput);
-$bio = new Biorrhythms();
+// Missing or invalid dates fall back to a default, but the user is told
+// instead of silently getting a reading for a different date.
+$inputNotices = [];
+$dateParam = static function (string $param, string $label, string $default) use (&$inputNotices): string {
+    $raw = $_GET[$param] ?? null;
+    if ($raw === null || $raw === '') {
+        return $default;
+    }
+    if (DateInput::parse($raw) === null) {
+        $inputNotices[] = sprintf(
+            '«%s» no es una fecha válida (YYYY-MM-DD, entre %s y %s). Se usa %s.',
+            $label,
+            DateInput::MIN,
+            DateInput::MAX,
+            $default,
+        );
+        return $default;
+    }
+    return $raw;
+};
 
-$windowRadius = 45;
-$window = [];
+$birthInput        = $dateParam('birth', 'Fecha de nacimiento', $defaultBirth);
+$focusInput        = $dateParam('focus', 'Día de foco', $todayInput);
+$partnerBirthInput = $dateParam('partner_birth', 'Fecha de la otra persona', $defaultPartner);
 
-for ($offset = -$windowRadius; $offset <= $windowRadius; $offset++) {
-    $date = $focusDate->modify(($offset >= 0 ? '+' : '') . $offset . ' day');
-    $daysSinceBirth = daysBetween($birthDate, $date);
-
-    $window[] = [
-        'date' => $date->format('Y-m-d'),
-        'label' => DateFormatter::short($date),
-        'offset' => $offset,
-        'physical' => $bio->calculatePhysical($daysSinceBirth),
-        'emotional' => $bio->calculateEmotional($daysSinceBirth),
-        'intellectual' => $bio->calculateIntellectual($daysSinceBirth),
-    ];
+if (($_GET['birth'] ?? '') === '') {
+    $inputNotices[] = sprintf(
+        'Estás viendo una fecha de ejemplo (%s). Introduce tu fecha de nacimiento y pulsa «Actualizar vista».',
+        $defaultBirth,
+    );
 }
 
-$focusDaysSinceBirth = daysBetween($birthDate, $focusDate);
-$focusValues = [
-    'physical' => $bio->calculatePhysical($focusDaysSinceBirth),
-    'emotional' => $bio->calculateEmotional($focusDaysSinceBirth),
-    'intellectual' => $bio->calculateIntellectual($focusDaysSinceBirth),
-];
+$compatPresetInput = $_GET['preset'] ?? 'custom';
+$compatPresetInput = is_string($compatPresetInput) && in_array($compatPresetInput, ApiPayload::PRESETS, true) ? $compatPresetInput : 'custom';
+$embedMode   = ($_GET['embed'] ?? '') === '1' || ($_GET['view'] ?? '') === 'widget';
+$widgetTheme = ($_GET['theme'] ?? 'dark') === 'light' ? 'light' : 'dark';
+// Without an explicit focus, the browser fills in the user's local "today" (see <head> script).
+$focusFromClient = !isset($_GET['focus']) || $_GET['focus'] === '';
 
-$partnerFocusValues = [
-    'physical' => $bio->calculatePhysical(daysBetween($partnerBirthDate, $focusDate)),
-    'emotional' => $bio->calculateEmotional(daysBetween($partnerBirthDate, $focusDate)),
-    'intellectual' => $bio->calculateIntellectual(daysBetween($partnerBirthDate, $focusDate)),
-];
+$birthDate        = DateInput::parse($birthInput);
+$focusDate        = DateInput::parse($focusInput);
+$partnerBirthDate = DateInput::parse($partnerBirthInput);
+$bio              = new Biorrhythms();
+
+$windowRadius = ApiPayload::WINDOW_RADIUS;
+$window       = Timeline::window($bio, $birthDate, $focusDate, $windowRadius);
+
+$focusValues        = Timeline::values($bio, $birthDate, $focusDate);
+$partnerFocusValues = Timeline::values($bio, $partnerBirthDate, $focusDate);
 
 $selectedIndex = $windowRadius;
 $selectedPoint = $window[$selectedIndex];
 
-$profileLabel = 'Balanced';
-if ($selectedPoint['physical'] >= $selectedPoint['emotional'] && $selectedPoint['physical'] >= $selectedPoint['intellectual']) {
-    $profileLabel = 'Physical peak';
-} elseif ($selectedPoint['emotional'] >= $selectedPoint['physical'] && $selectedPoint['emotional'] >= $selectedPoint['intellectual']) {
-    $profileLabel = 'Emotional peak';
-} elseif ($selectedPoint['intellectual'] >= $selectedPoint['physical'] && $selectedPoint['intellectual'] >= $selectedPoint['emotional']) {
-    $profileLabel = 'Mental peak';
-}
+$profileLabel = Profile::labelEs($selectedPoint);
 
 $focusSummary = sprintf(
     '%s · %s · %s',
@@ -157,6 +142,20 @@ $seriesData = [
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Biorrhythms</title>
+<?php if ($focusFromClient && !$embedMode): ?>
+    <script>
+        // No explicit focus: use the visitor's local calendar day instead of the server's.
+        (function () {
+            var d = new Date();
+            var local = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            if (local !== <?= json_encode($todayInput) ?>) {
+                var url = new URL(window.location.href);
+                url.searchParams.set('focus', local);
+                window.location.replace(url.toString());
+            }
+        })();
+    </script>
+<?php endif; ?>
     <style>
         :root {
             --bg: #07111f;
@@ -917,6 +916,20 @@ $seriesData = [
             fill: rgba(255, 255, 255, 0.8);
             font-size: 12px;
         }
+
+        .input-notice {
+            margin: 0 0 14px;
+            padding: 12px 16px;
+            border: 1px solid var(--accent);
+            border-radius: 14px;
+            background: rgba(248, 201, 93, 0.12);
+            color: var(--text);
+            font-size: 0.92rem;
+            line-height: 1.45;
+        }
+
+        .input-notice p { margin: 0; }
+        .input-notice p + p { margin-top: 6px; }
 
         .footer-note {
             margin-top: 14px;
@@ -2566,6 +2579,14 @@ $seriesData = [
                 </div>
             </article>
         </section>
+
+<?php if ($inputNotices !== [] && !$embedMode): ?>
+        <div class="input-notice" role="alert">
+<?php foreach ($inputNotices as $notice): ?>
+            <p><?= htmlspecialchars($notice) ?></p>
+<?php endforeach; ?>
+        </div>
+<?php endif; ?>
 
         <section class="card controls-bar">
             <form method="get" style="display:contents;">
