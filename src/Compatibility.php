@@ -30,4 +30,42 @@ class Compatibility
             self::score($a['intellectual'], $b['intellectual'])
         ) / 3.0;
     }
+
+    /** Weights per preset; same values as the web's PRESET_WEIGHTS. Unknown presets weigh the rhythms equally. */
+    public static function weights(string $preset): array
+    {
+        return match ($preset) {
+            'pair'   => ['physical' => 0.20, 'emotional' => 0.50, 'intellectual' => 0.30],
+            'friend' => ['physical' => 0.25, 'emotional' => 0.45, 'intellectual' => 0.30],
+            'work'   => ['physical' => 0.25, 'emotional' => 0.20, 'intellectual' => 0.55],
+            default  => ['physical' => 1 / 3, 'emotional' => 1 / 3, 'intellectual' => 1 / 3],
+        };
+    }
+
+    /** Preset-weighted closeness of two day-points, in [0, 1]. */
+    public static function weightedScore(array $a, array $b, string $preset): float
+    {
+        $w = self::weights($preset);
+
+        return $w['physical'] * self::score($a['physical'], $b['physical'])
+            + $w['emotional'] * self::score($a['emotional'], $b['emotional'])
+            + $w['intellectual'] * self::score($a['intellectual'], $b['intellectual']);
+    }
+
+    /**
+     * Whether each rhythm moves the same way (both rising or both falling) for two people.
+     * Takes slopes as produced by Rhythm::phase().
+     *
+     * @return array{physical: bool, emotional: bool, intellectual: bool}
+     */
+    public static function trendAgreement(array $slopesA, array $slopesB): array
+    {
+        $agree = static fn (string $key): bool => ($slopesA[$key] >= 0) === ($slopesB[$key] >= 0);
+
+        return [
+            'physical'     => $agree('physical'),
+            'emotional'    => $agree('emotional'),
+            'intellectual' => $agree('intellectual'),
+        ];
+    }
 }
