@@ -7,6 +7,7 @@ require_once __DIR__ . '/src/autoload.php';
 use Biorrhythms\ApiPayload;
 use Biorrhythms\Biorrhythms;
 use Biorrhythms\Compatibility;
+use Biorrhythms\CriticalDays;
 use Biorrhythms\DailyReading;
 use Biorrhythms\DateInput;
 use Biorrhythms\ExtremeDays;
@@ -59,19 +60,13 @@ $birthInput        = $dateParam('birth', 'Fecha de nacimiento', $defaultBirth);
 $focusInput        = $dateParam('focus', 'Día de foco', $todayInput);
 $partnerBirthInput = $dateParam('partner_birth', 'Fecha de la otra persona', $defaultPartner);
 
-if (($_GET['birth'] ?? '') === '') {
-    $inputNotices[] = sprintf(
-        'Estás viendo una fecha de ejemplo (%s). Introduce tu fecha de nacimiento y pulsa «Actualizar vista».',
-        $defaultBirth,
-    );
-}
+// First visit: no birth in the URL (the head script already filled it from the saved profile if there was one).
+$showWelcome = ($_GET['birth'] ?? '') === '';
 
 $compatPresetInput = $_GET['preset'] ?? 'custom';
 $compatPresetInput = is_string($compatPresetInput) && in_array($compatPresetInput, ApiPayload::PRESETS, true) ? $compatPresetInput : 'custom';
 $embedMode   = ($_GET['embed'] ?? '') === '1' || ($_GET['view'] ?? '') === 'widget';
 $widgetTheme = ($_GET['theme'] ?? 'dark') === 'light' ? 'light' : 'dark';
-// Without an explicit focus, the browser fills in the user's local "today" (see <head> script).
-$focusFromClient = !isset($_GET['focus']) || $_GET['focus'] === '';
 
 $birthDate        = DateInput::parse($birthInput);
 $focusDate        = DateInput::parse($focusInput);
@@ -150,7 +145,7 @@ $sunSign       = Zodiac::sunSign($birthDate);
 $lifePath      = Numerology::lifePath($birthDate);
 $lifePathInfo  = Numerology::meaning($lifePath);
 $moon          = Lunar::phase($focusDate);
-$birthIsExample = ($_GET['birth'] ?? '') === '';
+$birthIsExample = $showWelcome;
 
 $month       = MonthCalendar::build($birthDate, $focusDate);
 $prevMonth   = $focusDate->modify('first day of previous month')->format('Y-m-d');
@@ -164,6 +159,7 @@ $monthLink   = static fn (string $focus): string => '?' . http_build_query(
     '&',
     PHP_QUERY_RFC3986,
 );
+$criticalAhead = CriticalDays::find($birthDate, $focusDate, $focusDate->modify('+1 day'));
 $icsLink = 'calendar.php?' . http_build_query(['birth' => $birthInput, 'from' => $focusInput, 'days' => 90], '', '&', PHP_QUERY_RFC3986);
 
 $seriesData = [
@@ -187,16 +183,24 @@ $seriesData = [
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Biorrhythms</title>
-<?php if ($focusFromClient && !$embedMode): ?>
+<?php if (!$embedMode): ?>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#07111f">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <script src="assets/profile.js"></script>
     <script>
-        // No explicit focus: use the visitor's local calendar day instead of the server's.
+        // Fill a missing birth from the saved profile and a missing focus with the visitor's local day,
+        // then remember the birth date in the URL. Never overrides parameters that are already present.
         (function () {
-            var d = new Date();
-            var local = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            if (local !== <?= json_encode($todayInput) ?>) {
-                var url = new URL(window.location.href);
-                url.searchParams.set('focus', local);
-                window.location.replace(url.toString());
+            var P = window.BiorrhythmsProfile;
+            var store = null;
+            try { store = window.localStorage; } catch (e) { /* storage blocked */ }
+            var next = P.resolveUrl(window.location.href, store ? P.load(store) : null, P.localDay(), <?= json_encode($todayInput) ?>);
+            if (next) {
+                window.location.replace(next);
+            } else if (store) {
+                P.rememberBirth(store, window.location.href);
             }
         })();
     </script>
@@ -2715,6 +2719,17 @@ $seriesData = [
             </article>
         </section>
 
+<?php if ($showWelcome && !$embedMode): ?>
+        <form class="input-notice" method="get" id="welcomeForm">
+            <p><strong>Bienvenido.</strong> Ahora ves una fecha de ejemplo (<?= htmlspecialchars($defaultBirth) ?>). Introduce tu fecha de nacimiento para ver tus ritmos; solo se guarda en este navegador.</p>
+            <p>
+                <label>Fecha de nacimiento
+                    <input type="date" name="birth" required min="<?= DateInput::MIN ?>" max="<?= DateInput::MAX ?>">
+                </label>
+                <button type="submit" class="bar-submit">Ver mis ritmos</button>
+            </p>
+        </form>
+<?php endif; ?>
 <?php if ($inputNotices !== [] && !$embedMode): ?>
         <div class="input-notice" role="alert">
 <?php foreach ($inputNotices as $notice): ?>
@@ -3039,6 +3054,51 @@ $seriesData = [
             </div>
         </section>
 
+        <section class="section card extreme-card" id="chrono">
+            <div class="extreme-head">
+                <div>
+                    <h2>Cronotipo y ritmo del día</h2>
+                    <p>Plantilla orientativa a partir de tu hora de despertar, y un cuestionario corto de cronotipo.</p>
+                </div>
+                <div class="status-pill" id="chronoPill">Sin datos</div>
+            </div>
+            <form class="diary-form" id="wakeForm" autocomplete="off">
+                <label>Hora a la que te despiertas
+                    <input type="time" id="chronoWake" required>
+                </label>
+                <button type="submit" class="bar-submit">Ver mi día</button>
+            </form>
+            <div id="chronoSchedule"></div>
+            <h3 style="margin:22px 0 8px;font-size:1rem">Cuestionario de cronotipo</h3>
+            <form id="chronoForm" autocomplete="off"></form>
+            <div class="footer-note" id="chronoStatus" role="status"></div>
+            <div id="chronoResult"></div>
+            <p class="diary-caveat">
+                Las horas son reglas generales (luz por la mañana, valle tras la comida unas 8 h después de despertar, café hasta unas 8 h antes de dormir),
+                no mediciones de tu reloj biológico. El cuestionario es una adaptación propia inspirada en el rMEQ (Adan y Almirall, 1991):
+                mantiene su rango (4–25) y sus tres grupos, pero no es el instrumento validado ni un diagnóstico.
+                Los bloques de 90 min parten del ciclo básico reposo-actividad; la evidencia de que sea el ritmo ideal de trabajo es limitada.
+            </p>
+        </section>
+
+        <section class="section card extreme-card" id="prefs">
+            <div class="extreme-head">
+                <div>
+                    <h2>Avisos y datos guardados</h2>
+                    <p>Todo se guarda solo en este navegador; no hay cuenta ni servidor.</p>
+                </div>
+            </div>
+            <div class="diary-actions">
+                <button type="button" class="secondary-btn" id="notifyToggle">Activar avisos de días críticos</button>
+                <button type="button" class="secondary-btn" id="forgetProfile" hidden>Olvidar mi fecha y preferencias</button>
+            </div>
+            <div class="footer-note" id="prefsStatus" role="status"></div>
+            <p class="diary-caveat">
+                El aviso aparece al abrir la app el día crítico o el anterior. No hay servidor que envíe notificaciones en segundo plano,
+                así que si no abres la app, no se avisa.
+            </p>
+        </section>
+
         <section class="section card story-card">
             <div class="story-head">
                 <div>
@@ -3222,6 +3282,7 @@ $seriesData = [
         const birthInput = <?= json_encode($birthInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const focusInput = <?= json_encode($focusInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const partnerBirthInputInitial = <?= json_encode($partnerBirthInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        const birthIsExampleInitial = <?= json_encode($showWelcome) ?>;
         const compatPresetInputInitial = <?= json_encode($compatPresetInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const svgNS = 'http://www.w3.org/2000/svg';
         const width = 1100;
@@ -3843,7 +3904,8 @@ $seriesData = [
 
         function syncCompatibilityUrl() {
             const url = new URL(window.location.href);
-            url.searchParams.set('birth', birthInput);
+            // Never write the example birth into the URL: it would be saved later as if it were the user's own.
+            if (!birthIsExampleInitial) url.searchParams.set('birth', birthInput);
             url.searchParams.set('focus', focusInput);
             url.searchParams.set('partner_birth', partnerBirthInput.value || partnerBirthInputInitial);
 
@@ -4718,6 +4780,8 @@ $seriesData = [
         storyAutoBtn.addEventListener('click', toggleStoryAuto);
     </script>
     <script src="assets/diary.js"></script>
+    <script src="assets/chrono.js"></script>
+    <script src="assets/notify.js"></script>
     <script>
         (function () {
             const D = window.BiorrhythmsDiary;
@@ -4822,6 +4886,193 @@ $seriesData = [
             });
 
             render();
+        })();
+    </script>
+    <script>
+        (function () {
+            var P = window.BiorrhythmsProfile, C = window.BiorrhythmsChrono, N = window.BiorrhythmsNotify;
+            if (!P || !C || !N || !document.getElementById('chrono')) return;
+
+            var store = null;
+            try { store = window.localStorage; } catch (e) { /* storage blocked */ }
+            var criticalAhead = <?= json_encode($criticalAhead, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+            var profile = store ? P.load(store) : P.sanitize(null);
+
+            function el(tag, text, className) {
+                var node = document.createElement(tag);
+                if (text !== undefined) node.textContent = text;
+                if (className) node.className = className;
+                return node;
+            }
+
+            function persist(patch) {
+                if (store) P.save(store, patch);
+                profile = store ? P.load(store) : Object.assign(profile, patch);
+            }
+
+            // ---- schedule from wake-up time
+            var wakeInput = document.getElementById('chronoWake');
+            var scheduleBox = document.getElementById('chronoSchedule');
+            var pill = document.getElementById('chronoPill');
+
+            function renderSchedule(wake) {
+                scheduleBox.replaceChildren();
+                var s = C.schedule(wake);
+                if (!s) return;
+                var table = el('table', undefined, 'diary-table');
+                var head = el('tr');
+                ['Franja', 'Horario'].forEach(function (t) { head.appendChild(el('th', t)); });
+                table.appendChild(head);
+                s.windows.forEach(function (w) {
+                    var tr = el('tr');
+                    tr.appendChild(el('td', w.label));
+                    tr.appendChild(el('td', w.start === w.end ? w.start : w.start + ' – ' + w.end));
+                    table.appendChild(tr);
+                });
+                scheduleBox.appendChild(table);
+                scheduleBox.appendChild(el('h3', 'Bloques de trabajo de 90 min', undefined)).style.cssText = 'margin:18px 0 8px;font-size:1rem';
+                var list = el('ul');
+                s.blocks.forEach(function (b) { list.appendChild(el('li', 'Bloque ' + b.index + ': ' + b.start + ' – ' + b.end + ' (pausa de 20 min después)')); });
+                scheduleBox.appendChild(list);
+            }
+
+            document.getElementById('wakeForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                if (!C.schedule(wakeInput.value)) return;
+                persist({ wake: wakeInput.value });
+                renderSchedule(wakeInput.value);
+                updatePill();
+                updateForget();
+            });
+
+            // ---- questionnaire
+            var form = document.getElementById('chronoForm');
+            var status = document.getElementById('chronoStatus');
+            var result = document.getElementById('chronoResult');
+
+            C.QUESTIONS.forEach(function (q, qi) {
+                var fs = el('fieldset');
+                fs.style.cssText = 'border:1px solid var(--stroke);border-radius:12px;margin:0 0 10px;padding:10px 14px';
+                fs.appendChild(el('legend', (qi + 1) + '. ' + q.text));
+                q.options.forEach(function (o) {
+                    var label = el('label');
+                    label.style.cssText = 'display:inline-flex;gap:6px;align-items:center;margin:4px 14px 4px 0;font-size:0.9rem';
+                    var input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = q.id;
+                    input.value = String(o[1]);
+                    label.appendChild(input);
+                    label.appendChild(document.createTextNode(o[0]));
+                    fs.appendChild(label);
+                });
+                form.appendChild(fs);
+            });
+            var submit = el('button', 'Calcular mi cronotipo', 'bar-submit');
+            submit.type = 'submit';
+            form.appendChild(submit);
+
+            function renderResult(c) {
+                result.replaceChildren();
+                if (!c) return;
+                var info = C.TYPES[c.key];
+                result.appendChild(el('p', 'Tu perfil: ' + info.label + ' (puntuación ' + c.score + ' de ' + C.MAX_SCORE + ')', undefined)).style.fontWeight = '700';
+                result.appendChild(el('p', info.advice));
+            }
+
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var answers = {};
+                C.QUESTIONS.forEach(function (q) {
+                    var chosen = form.querySelector('input[name="' + q.id + '"]:checked');
+                    if (chosen) answers[q.id] = Number(chosen.value);
+                });
+                var total = C.score(answers);
+                if (total === null) { status.textContent = 'Responde las 5 preguntas.'; return; }
+                var c = C.classify(total);
+                persist({ chronotype: { score: total, key: c.key } });
+                status.textContent = '';
+                renderResult(profile.chronotype);
+                updatePill();
+                updateForget();
+            });
+
+            function updatePill() {
+                pill.textContent = profile.chronotype ? C.TYPES[profile.chronotype.key].label : (profile.wake ? 'Horario listo' : 'Sin datos');
+            }
+
+            // ---- notifications + forget
+            var notifyBtn = document.getElementById('notifyToggle');
+            var forgetBtn = document.getElementById('forgetProfile');
+            var prefsStatus = document.getElementById('prefsStatus');
+            var supported = 'Notification' in window;
+
+            function updateNotifyBtn() {
+                if (!supported) { notifyBtn.disabled = true; notifyBtn.textContent = 'Avisos no disponibles en este navegador'; return; }
+                if (Notification.permission === 'denied') { notifyBtn.disabled = true; notifyBtn.textContent = 'Avisos bloqueados en el navegador'; return; }
+                notifyBtn.textContent = profile.notify && Notification.permission === 'granted' ? 'Desactivar avisos' : 'Activar avisos de días críticos';
+            }
+
+            function updateForget() {
+                forgetBtn.hidden = !(profile.birth || profile.chronotype || profile.wake || profile.notify);
+            }
+
+            function show(n) {
+                var opts = { body: n.body, icon: 'assets/icons/icon-192.png', tag: 'critical-' + n.date };
+                var direct = function () { try { new Notification(n.title, opts); } catch (e) { /* unsupported */ } };
+                if (!('serviceWorker' in navigator)) { direct(); return; }
+                navigator.serviceWorker.getRegistration().then(function (r) { return r ? r.showNotification(n.title, opts) : direct(); }).catch(direct);
+            }
+
+            function maybeNotify() {
+                if (!supported || !profile.notify || Notification.permission !== 'granted') return;
+                var today = P.localDay();
+                if (focusInput !== today) return; // the critical list is for the focus date
+                var notice = N.pendingNotice(criticalAhead, today, profile.notified);
+                if (!notice) return;
+                show(notice);
+                persist({ notified: profile.notified.concat(notice.date) });
+            }
+
+            notifyBtn.addEventListener('click', function () {
+                if (profile.notify && supported && Notification.permission === 'granted') {
+                    persist({ notify: false });
+                    prefsStatus.textContent = 'Avisos desactivados.';
+                    updateNotifyBtn(); updateForget();
+                    return;
+                }
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === 'granted') {
+                        persist({ notify: true });
+                        prefsStatus.textContent = 'Avisos activados. Se mostrarán al abrir la app en un día crítico o la víspera.';
+                        maybeNotify();
+                    } else {
+                        prefsStatus.textContent = 'No se concedió el permiso de notificaciones.';
+                    }
+                    updateNotifyBtn(); updateForget();
+                });
+            });
+
+            var forgetTimer = null;
+            forgetBtn.addEventListener('click', function () {
+                if (forgetTimer === null) {
+                    forgetBtn.textContent = 'Confirmar: borrar fecha y preferencias';
+                    forgetTimer = window.setTimeout(function () { forgetTimer = null; forgetBtn.textContent = 'Olvidar mi fecha y preferencias'; }, 5000);
+                    return;
+                }
+                window.clearTimeout(forgetTimer);
+                if (store) P.clear(store);
+                window.location.assign(window.location.pathname);
+            });
+
+            // ---- init
+            if (profile.wake) { wakeInput.value = profile.wake; renderSchedule(profile.wake); }
+            renderResult(profile.chronotype);
+            updatePill(); updateNotifyBtn(); updateForget();
+            maybeNotify();
+
+            if ('serviceWorker' in navigator && !document.body.classList.contains('embed-view')) {
+                window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { /* offline support is optional */ }); });
+            }
         })();
     </script>
 </body>

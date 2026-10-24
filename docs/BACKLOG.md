@@ -2,6 +2,7 @@
 
 > Fecha de creación: 2026-06-26
 > Basado en v1.0.0
+> Actualizado 2026-10-24: milestones v1.1.0 y v1.2.0 cubiertos (ver `docs/PLAN.md` y los releases v1.1.x–v1.5.0; la numeración de releases ya no coincide con la de este documento).
 
 ---
 
