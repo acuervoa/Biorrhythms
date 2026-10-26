@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Individuals consulting a Spanish-language web app to explore their own daily biorhythm reading. The experience should work for people who have never used a biorhythm model; compatibility is a secondary use case.
+Individuals consulting a Spanish-language web app to understand their own reading for a selected day. The experience should work for people who have never used a biorhythm model; comparing two profiles is a secondary use case.
 
 ## Product Purpose
 
@@ -20,7 +20,8 @@ Biorrhythms presents three classic sinusoidal cycles—physical (23 days), emoti
 
 ## Operating Context
 
-- The primary task is understanding the reading for a selected day, then exploring the chart and nearby dates.
+- The primary task is understanding one person's reading for a selected day, then exploring the chart and nearby dates.
+- The interface has four destinations: **Lectura** (daily values, chart and date selection), **Explorar** (events, calendar and bounded cycle extremes), **Diario** (private self-observation) and **Herramientas** (comparison, chronotype, symbolic context, sharing and integrations).
 - First use asks for a birth date once, then opens the person's own reading without sample data that could be mistaken for theirs.
 - The app is used on mobile and desktop browsers.
 - Birth date, preferences, and diary entries are stored in the browser. There is no account or server-side profile.
@@ -28,8 +29,11 @@ Biorrhythms presents three classic sinusoidal cycles—physical (23 days), emoti
 
 ## Capabilities and Constraints
 
-- Calculate the three biorhythm model values, chart them over time, and show a short forecast and reflective daily suggestion.
-- Preserve the existing compatibility view, critical and extreme days, monthly calendar, local self-observation diary, chronotype guidance, symbolic context (zodiac, numerology, and approximate lunar phase), sharing/export, embeddable widget, PWA behavior, and API routes.
+- Calculate the three biorhythm model values and chart them over time. Keep one neutral reflection question in the primary reading; do not recommend actions or frame a forecast as advice.
+- Show event horizons of 7, 30 or 90 days and a concise 30-day cycle-extreme preview. Let people reveal the remaining cycle results in labelled batches.
+- Preserve monthly calendar, local self-observation diary, chronotype guidance, symbolic context (zodiac, numerology, and approximate lunar phase), sharing/export, embeddable widget, PWA behavior, and API routes.
+- Describe two-profile comparison as mathematical pattern overlap; it does not evaluate interpersonal compatibility.
+- Keep decision-assistant, generated ritual and Story mode out of the primary interface. Retain their existing API fields for consumers that depend on them.
 - Keep symbolic context optional and clearly distinguished from biorhythm calculations.
 - Preserve calculation semantics, API contracts, URL parameters, exports, and local-only data storage through the visual redesign.
 - Do not present model values as measured energy or use them to support medical, financial, legal, or other consequential decisions.
@@ -52,7 +56,7 @@ Biorrhythms presents three classic sinusoidal cycles—physical (23 days), emoti
 2. Treat biorhythm values as model outputs and reflection prompts, never as measurements or predictions.
 3. Keep symbolic content optional and visibly separate from the calculated rhythms.
 4. Preserve the user's local control of personal data.
-5. Keep advanced tools available without letting them compete with the primary reading.
+5. Keep advanced tools grouped in Herramientas and reveal secondary detail on request.
 
 ## Accessibility & Inclusion
 

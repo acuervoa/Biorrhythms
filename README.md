@@ -3,9 +3,9 @@
 App PHP para visualizar biorritmos personales: físico, emocional e intelectual.
 Sin dependencias externas — no requiere Composer, Node ni PHP instalados en el host.
 
-La lectura está pensada para una persona: configuras tu fecha de nacimiento una vez,
-eliges el día que quieres observar y consultas los tres valores matemáticos del modelo.
-No son mediciones biológicas ni predicciones validadas.
+La app organiza el recorrido en cuatro espacios: **Lectura**, **Explorar**, **Diario** y
+**Herramientas**. Configuras tu fecha de nacimiento una vez y consultas los tres valores
+matemáticos para el día seleccionado. No son mediciones biológicas ni predicciones validadas.
 
 ---
 
@@ -123,52 +123,34 @@ Fórmula: `sin(2π × días_desde_nacimiento / período)`
 
 El valor oscila entre −1 (−100%) y +1 (+100%).
 
-### Widgets disponibles
+### Lectura
 
-**Timeline interactiva**
-Gráfico SVG de los tres ritmos. Zoom configurable: 7, 30, 60 o 90 días (por defecto 90). El marcador identifica el día seleccionado, que puede ser distinto de hoy. En pantallas estrechas reduce las marcas temporales para que las fechas sigan legibles.
+El día seleccionado, sus tres valores y el gráfico forman el flujo principal. El gráfico SVG permite cambiar entre 7, 30, 60 y 90 días; el control de fechas recorre los días cercanos y mantiene el foco elegido en la URL. En la primera visita, la app pide la fecha de nacimiento y no muestra valores de ejemplo como si fueran personales.
 
-**Lectura diaria**
-La fecha elegida, los tres valores calculados y el gráfico forman el recorrido principal. Los ciclos se identifican siempre con color y nombre: físico (terracota), emocional (verde azulado) e intelectual (azul). La lectura conserva la aclaración de que son salidas matemáticas, no mediciones.
+Los ritmos físico (terracota), emocional (verde azulado) e intelectual (azul) se identifican por nombre y color. Una pregunta neutral invita a observar el día. La app aclara que son salidas de un modelo matemático, no mediciones ni predicciones validadas.
 
-**Identidad visual**
-La interfaz usa una hoja editorial de papel cálido, tinta oscura y tipografía serif para fechas y valores. Incluye tema claro y oscuro, diseño responsive y primera visita sin datos de ejemplo.
+### Explorar
 
-**Decisión diaria**
-Calendario de 7 días con colores por score medio. Ritual accionable adaptado al ritmo dominante del día.
+- El horizonte de eventos se puede acotar a 7, 30 o 90 días; empieza en 30. Picos, valles y cruces de cero se agrupan por fecha y ciclo.
+- La lista de días extremos empieza con un resumen de 30 días y permite revelar el ciclo completo en bloques. Se calcula con los ciclos de 23, 28 y 33 días (su periodo común es 21 252 días, unos 58,2 años).
+- El calendario mensual muestra la media de los tres ciclos y los días críticos. Descarga un archivo `.ics` con `/calendar.php?birth=…&from=…&days=90&min=1`.
 
-**Días especiales**
-Picos, valles y cruces de cero de cada ritmo en la ventana de 90 días, agrupados por ritmo (Físico / Emocional / Intelectual). Solo muestra fechas desde el día foco en adelante.
+### Diario
 
-**Días extremos**
-Fechas futuras donde la media de los 3 ritmos supera el +95% o cae por debajo del −95%, calculadas sobre el ciclo completo (~58 años, LCM de 23/28/33 = 21 252 días).
+Registra energía, ánimo y claridad (1–5) por día. Los datos permanecen en `localStorage` de este navegador; se pueden exportar o importar como JSON y borrar desde el Diario. La tabla compara esos registros con cada curva mediante correlación de Pearson. Requiere al menos 14 registros por ritmo; la asociación no demuestra causa ni capacidad predictiva, y el intervalo de confianza es optimista porque los días consecutivos no son independientes.
 
-**Modo compatibilidad**
-Compara los biorritmos de dos personas. Muestra score de compatibilidad diaria, heatmap semanal y desglose por ritmo con barras en el color de cada ritmo.
+### Herramientas
 
-**Contexto del día**
-Signo solar (con aviso de cúspide), camino de vida, día personal numerológico y fase lunar aproximada (±1 día) para la fecha de foco. Es un marco simbólico, no evidencia empírica.
+- **Comparar ciclos:** calcula el solapamiento matemático entre dos perfiles y permite exportar la comparación. No evalúa compatibilidad interpersonal.
+- **Contexto simbólico:** muestra signo solar, numerología y fase lunar aproximada (±1 día); son marcos simbólicos, no evidencia empírica.
+- **Cronotipo y horario:** ofrece una plantilla a partir de la hora de despertar y un cuestionario adaptado del rMEQ. No es el instrumento validado ni un diagnóstico; los bloques de 90 minutos tampoco se presentan como duración ideal demostrada.
+- **Compartir e integrar:** crea una tarjeta PNG, un enlace a la Lectura, un iframe del widget y una vista previa de la API. Las preferencias y avisos se gestionan en el apartado «Perfil y preferencias».
 
-**Calendario mensual**
-Cuadrícula del mes con la media diaria (verde, ámbar, rojo, y el porcentaje en texto) y los días críticos simples, dobles y triples. Descarga `.ics` (`/calendar.php?birth=…&from=…&days=90&min=1`) para llevar los días críticos a tu calendario.
+El asistente de decisiones, la generación de rituales y Story mode ya no aparecen como flujos de la interfaz. Los campos de ritual y comparación se conservan en las respuestas de la API para mantener compatibilidad con consumidores existentes.
 
-**Diario de autoobservación**
-Registro diario de energía, ánimo y claridad (1–5) guardado solo en el navegador (`localStorage`), con exportar/importar JSON y «olvidar mis datos». Calcula la correlación de Pearson con cada curva (mínimo 14 registros) con su intervalo de confianza al 95 %, y avisa cuando no hay relación o los datos son constantes.
+### Identidad visual y PWA
 
-**Cronotipo y ritmo del día**
-Con tu hora de despertar propone una plantilla orientativa (luz, ventanas de foco, valle postprandial, último café, bajar luces, acostarse) y bloques de trabajo de 90 min. Incluye un cuestionario corto de cronotipo: es una adaptación propia inspirada en el rMEQ (Adan y Almirall, 1991), con su mismo rango (4–25) y tres grupos, pero **no** es el instrumento validado ni un diagnóstico.
-
-**Datos guardados y avisos**
-La fecha de nacimiento, el cronotipo, la hora de despertar y las preferencias se guardan solo en el navegador (`localStorage`). Una primera visita muestra un formulario de bienvenida; las siguientes recuperan tu fecha sin parámetros de URL. «Olvidar mi fecha y preferencias» lo borra todo. Los avisos de días críticos usan la API de notificaciones del navegador y **solo aparecen al abrir la app** el día crítico o la víspera (no hay servidor que envíe avisos en segundo plano).
-
-**App instalable (PWA)**
-`manifest.webmanifest` y `sw.js`: se puede añadir a la pantalla de inicio. Los scripts e iconos se precachean; las páginas van «red primero» (la lectura es siempre del día actual) y, sin conexión, se sirve la última copia de esa página o un aviso de «Sin conexión». `/api/` y `calendar.php` nunca pasan por el service worker. Si cambias un archivo precacheado, sube `VERSION` en `sw.js`.
-
-**Tarjeta compartible**
-Genera una imagen PNG con el resumen del día, exportable.
-
-**Widget embebible**
-Snippet de iframe para incrustar la vista compacta en otra página.
+La interfaz usa papel cálido, tinta oscura y tipografía serif para fechas y valores. Incluye temas claro y oscuro, diseño adaptable, navegación por teclado y respeto por la preferencia de movimiento reducido. `manifest.webmanifest` y `sw.js` permiten instalar la app; `/api/` y `calendar.php` no pasan por el service worker. Al cambiar recursos precacheados, actualiza `VERSION` en `sw.js`.
 
 ---
 
@@ -176,7 +158,12 @@ Snippet de iframe para incrustar la vista compacta en otra página.
 
 ```
 Biorrhythms/
-├── index.php          # App principal (PHP + CSS + JS en un solo archivo)
+├── index.php          # App principal (PHP y lógica de interacción)
+├── assets/
+│   ├── workspaces.css # Navegación, estructura y responsive
+│   ├── workspaces.js  # Activación de los cuatro espacios
+│   └── *.js           # Diario, perfil, cronotipo y avisos
+├── views/             # Parciales PHP de cada espacio
 ├── api/
 │   └── index.php      # Endpoint JSON
 ├── src/

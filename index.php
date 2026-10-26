@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+define('BIORRHYTHMS_ENTRYPOINT', true);
+
 require_once __DIR__ . '/src/autoload.php';
 
 use Biorrhythms\ApiPayload;
@@ -62,6 +64,7 @@ $partnerBirthInput = $dateParam('partner_birth', 'Fecha de la otra persona', $de
 
 // First visit: no birth in the URL (the head script already filled it from the saved profile if there was one).
 $showWelcome = ($_GET['birth'] ?? '') === '';
+$birthIsValidInitial = is_string($_GET['birth'] ?? null) && DateInput::parse($_GET['birth']) !== null;
 
 $compatPresetInput = $_GET['preset'] ?? 'custom';
 $compatPresetInput = is_string($compatPresetInput) && in_array($compatPresetInput, ApiPayload::PRESETS, true) ? $compatPresetInput : 'custom';
@@ -131,13 +134,8 @@ if ($rawExtreme !== null && $rawExtreme !== '') {
     }
 }
 $extremePercent = (int) round($extremeThreshold * 100);
-$extremeDays    = ExtremeDays::find($bio, $birthDate, $focusDate, $extremeThreshold);
-
-// One daily ritual per window point, built by the same code as /api/v1/ (web and API cannot diverge).
-$rituals = array_map(
-    static fn (array $point): array => DailyReading::forDate($birthDate, DateInput::parse($point['date']), $window)['ritual'],
-    $window,
-);
+$cycleExtremeDays = ExtremeDays::find($bio, $birthDate, $birthDate, $extremeThreshold);
+$exploreWindow = Timeline::window($bio, $birthDate, $focusDate, ApiPayload::WINDOW_RADIUS + 91);
 
 $focusReading  = DailyReading::forDate($birthDate, $focusDate, $window);
 $personal      = $focusReading['personal'];
@@ -150,15 +148,41 @@ $birthIsExample = $showWelcome;
 $month       = MonthCalendar::build($birthDate, $focusDate);
 $prevMonth   = $focusDate->modify('first day of previous month')->format('Y-m-d');
 $nextMonth   = $focusDate->modify('first day of next month')->format('Y-m-d');
-$monthLink   = static fn (string $focus): string => '?' . http_build_query(
-    array_filter([
-        'birth' => $birthInput, 'focus' => $focus, 'partner_birth' => $partnerBirthInput,
-        'preset' => $compatPresetInput === 'custom' ? null : $compatPresetInput,
-    ]),
-    '',
-    '&',
-    PHP_QUERY_RFC3986,
+$currentQuery = array_filter(
+    $_GET,
+    static fn (mixed $value): bool => is_scalar($value),
 );
+$preservedQueryParams = array_filter(
+    $currentQuery,
+    static fn (string|int $key): bool => !in_array((string) $key, ['birth', 'focus', 'partner_birth', 'preset'], true),
+    ARRAY_FILTER_USE_KEY,
+);
+$buildDateLink = static function (string $focus, string $workspace) use (
+    $currentQuery,
+    $birthInput,
+    $birthIsValidInitial,
+    $showWelcome,
+    $partnerBirthInput,
+    $compatPresetInput,
+): string {
+    $params = $currentQuery;
+    if ($birthIsValidInitial) {
+        $params['birth'] = $birthInput;
+    } elseif ($showWelcome) {
+        unset($params['birth']);
+    }
+    $params['focus'] = $focus;
+    $params['partner_birth'] = $partnerBirthInput;
+    if ($compatPresetInput !== 'custom') {
+        $params['preset'] = $compatPresetInput;
+    } else {
+        unset($params['preset']);
+    }
+
+    return '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986) . '#' . $workspace;
+};
+$monthLink = static fn (string $focus): string => $buildDateLink($focus, 'explorar');
+$readingDateLink = static fn (string $focus): string => $buildDateLink($focus, 'lectura');
 $readingWeekdays = [1 => 'lunes', 2 => 'martes', 3 => 'miércoles', 4 => 'jueves', 5 => 'viernes', 6 => 'sábado', 7 => 'domingo'];
 $readingWeekdaysShort = [1 => 'lun', 2 => 'mar', 3 => 'mié', 4 => 'jue', 5 => 'vie', 6 => 'sáb', 7 => 'dom'];
 $readingMonths = [1 => 'ene', 2 => 'feb', 3 => 'mar', 4 => 'abr', 5 => 'may', 6 => 'jun', 7 => 'jul', 8 => 'ago', 9 => 'sep', 10 => 'oct', 11 => 'nov', 12 => 'dic'];
@@ -174,6 +198,7 @@ $icsLink = 'calendar.php?' . http_build_query(['birth' => $birthInput, 'from' =>
 $seriesData = [
     'windowRadius' => $windowRadius,
     'window' => $window,
+    'exploreWindow' => $exploreWindow,
     'selectedIndex' => $selectedIndex,
     'selectedPoint' => $selectedPoint,
     'profileLabel' => $profileLabel,
@@ -182,8 +207,7 @@ $seriesData = [
     'partnerBirthInput' => $partnerBirthInput,
     'compatPresetInput' => $compatPresetInput,
     'focusCompatibility' => $focusCompatibility,
-    'extremeDays' => $extremeDays,
-    'rituals' => $rituals,
+    'cycleExtremeDays' => $cycleExtremeDays,
 ];
 ?>
 <!doctype html>
@@ -1937,7 +1961,7 @@ $seriesData = [
             gap: 0;
         }
 
-        body.embed-view .shell > :not(.widget-card) {
+        body.embed-view .shell > :not(#herramientas) {
             display: none;
         }
 
@@ -2850,9 +2874,6 @@ $seriesData = [
         .primary-nav a[aria-current="page"], .primary-nav a:hover { color: var(--text); border-color: var(--physical); }
         .theme-toggle { justify-self: end; margin: 0; padding: 8px 12px; }
 
-        body.first-visit .shell > :not(.site-header):not(.welcome-sheet):not(.input-notice[role="alert"]) { display: none !important; }
-        body.first-visit .primary-nav { visibility: hidden; }
-
         .welcome-sheet {
             width: min(680px, 100%);
             margin: clamp(32px, 9vh, 104px) auto 0;
@@ -3109,649 +3130,32 @@ $seriesData = [
         body.embed-view .widget-card { background: transparent !important; border: 0 !important; box-shadow: none !important; }
         body.embed-view .widget-panel { background: transparent !important; border: 0 !important; }
     </style>
+    <link rel="stylesheet" href="assets/workspaces.css">
+<?php if (!$showWelcome || $embedMode): ?>
+    <script src="assets/workspaces.js" defer></script>
+<?php endif; ?>
 </head>
 <body<?= $embedMode ? ' class="embed-view" data-theme="' . htmlspecialchars($widgetTheme, ENT_QUOTES) . '"' : ($showWelcome ? ' class="first-visit"' : '') ?>>
     <main class="shell">
-        <header class="site-header">
-            <a class="wordmark" href="#lectura" aria-label="Biorrhythms, ir a la lectura">Biorrhythms</a>
-            <?php if (!$embedMode): ?>
-            <nav class="primary-nav" aria-label="Navegación principal">
-                <a href="#lectura" aria-current="page">Lectura</a>
-                <a href="#explorar">Explorar</a>
-            </nav>
-            <?php endif; ?>
-            <button id="themeToggleBtn" type="button" class="theme-toggle">Tema oscuro</button>
-        </header>
-
-<?php if ($showWelcome && !$embedMode): ?>
-        <section class="welcome-sheet" aria-labelledby="welcomeTitle">
-            <p class="section-label">Tu lectura personal</p>
-            <h1 id="welcomeTitle">Empieza por tu fecha</h1>
-            <p>Calcula tres ciclos para el día que elijas. Son resultados matemáticos, no mediciones ni predicciones.</p>
-            <form class="welcome-form" method="get" id="welcomeForm">
-                <label for="welcomeBirth">Fecha de nacimiento</label>
-                <div class="welcome-form-row">
-                    <input id="welcomeBirth" type="date" name="birth" required min="<?= DateInput::MIN ?>" max="<?= DateInput::MAX ?>">
-                    <button type="submit" class="bar-submit">Ver mi lectura</button>
-                </div>
-                <small>Se guarda solo en este navegador.</small>
-            </form>
+        <?php require __DIR__ . '/views/header.php'; ?>
+        <?php require __DIR__ . '/views/reading.php'; ?>
+<?php if (!$showWelcome || $embedMode): ?>
+        <section id="explorar" data-workspace-panel="explorar" aria-labelledby="explorar-heading">
+            <h1 id="explorar-heading" class="workspace-heading">Explorar</h1>
+            <?php require __DIR__ . '/views/explore.php'; ?>
+        </section>
+        <section id="diario" data-workspace-panel="diario" aria-labelledby="diario-heading">
+            <h1 id="diario-heading" class="workspace-heading">Diario</h1>
+            <?php require __DIR__ . '/views/diary.php'; ?>
+        </section>
+        <section id="herramientas" data-workspace-panel="herramientas" aria-labelledby="herramientas-heading">
+            <h1 id="herramientas-heading" class="workspace-heading">Herramientas</h1>
+            <?php require __DIR__ . '/views/tools.php'; ?>
         </section>
 <?php endif; ?>
-<?php if ($inputNotices !== [] && !$embedMode): ?>
-        <div class="input-notice" role="alert">
-<?php foreach ($inputNotices as $notice): ?>
-            <p><?= htmlspecialchars($notice) ?></p>
-<?php endforeach; ?>
-        </div>
-<?php endif; ?>
-
-        <section class="hero" id="lectura" aria-labelledby="readingDateHeading">
-            <div class="journal-layout">
-                <nav class="date-rail" aria-label="Días cercanos">
-                    <a class="date-rail-item" id="dateRailPrevious" href="<?= htmlspecialchars($monthLink($previousDayDate->format('Y-m-d'))) ?>" aria-label="Día anterior: <?= htmlspecialchars(\Biorrhythms\DateFormatter::long($previousDayDate)) ?>">
-                        <strong><?= $previousDayDate->format('j') ?></strong>
-                        <span><?= htmlspecialchars($readingMonths[(int) $previousDayDate->format('n')] . ' ' . $previousDayDate->format('Y')) ?></span>
-                        <small><?= htmlspecialchars($readingWeekdaysShort[(int) $previousDayDate->format('N')]) ?></small>
-                    </a>
-                    <a class="date-rail-item is-selected" id="dateRailCurrent" href="<?= htmlspecialchars($monthLink($focusDate->format('Y-m-d'))) ?>" aria-current="date" aria-label="Día seleccionado: <?= htmlspecialchars(\Biorrhythms\DateFormatter::long($focusDate)) ?>">
-                        <strong><?= $focusDate->format('j') ?></strong>
-                        <span><?= htmlspecialchars($readingMonths[(int) $focusDate->format('n')] . ' ' . $focusDate->format('Y')) ?></span>
-                        <small><?= htmlspecialchars($readingWeekdaysShort[(int) $focusDate->format('N')]) ?></small>
-                    </a>
-                    <a class="date-rail-item" id="dateRailNext" href="<?= htmlspecialchars($monthLink($nextDayDate->format('Y-m-d'))) ?>" aria-label="Día siguiente: <?= htmlspecialchars(\Biorrhythms\DateFormatter::long($nextDayDate)) ?>">
-                        <strong><?= $nextDayDate->format('j') ?></strong>
-                        <span><?= htmlspecialchars($readingMonths[(int) $nextDayDate->format('n')] . ' ' . $nextDayDate->format('Y')) ?></span>
-                        <small><?= htmlspecialchars($readingWeekdaysShort[(int) $nextDayDate->format('N')]) ?></small>
-                    </a>
-                </nav>
-                <article class="card hero-main">
-                    <div class="reading-heading">
-                        <div>
-                            <p class="reading-weekday" id="readingWeekday"><?= htmlspecialchars($readingWeekday) ?></p>
-                            <h1 id="readingDateHeading"><?= htmlspecialchars($readingDateLabel) ?></h1>
-                        </div>
-                        <p class="calendar-day-stamp" id="calendarDayStamp">Día <?= $readingDayOfYear ?> de <?= $readingYearLength ?></p>
-                    </div>
-                <div class="model-values-heading">
-                        <h2>Valores del modelo</h2>
-                    <p>Salidas matemáticas (no son mediciones)</p>
-                    </div>
-                    <div class="hero-stats-inline" aria-label="Valores calculados para el día seleccionado">
-                        <div class="stat stat-physical">
-                            <small>Físico</small>
-                            <strong id="stat-physical"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['physical'])) ?></strong>
-                            <span>Ciclo de 23 días</span>
-                        </div>
-                        <div class="stat stat-emotional">
-                            <small>Emocional</small>
-                            <strong id="stat-emotional"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['emotional'])) ?></strong>
-                            <span>Ciclo de 28 días</span>
-                        </div>
-                        <div class="stat stat-intellectual">
-                            <small>Intelectual</small>
-                            <strong id="stat-intellectual"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['intellectual'])) ?></strong>
-                            <span>Ciclo de 33 días</span>
-                        </div>
-                    </div>
-                <section class="chart-wrap" aria-labelledby="chartTitle">
-                    <div class="panel-head">
-                        <div>
-                            <h2 id="chartTitle">Ciclo de 90 días</h2>
-                        </div>
-                        <div class="button-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                            <div class="zoom-btns">
-                                <button type="button" class="zoom-btn" data-zoom="7">7 días</button>
-                                <button type="button" class="zoom-btn" data-zoom="30">30 días</button>
-                                <button type="button" class="zoom-btn" data-zoom="60">60 días</button>
-                                <button type="button" class="zoom-btn is-active" data-zoom="91">90 días</button>
-                            </div>
-                            <button id="exportPngBtn" type="button">Exportar PNG</button>
-                            <button id="jumpToTodayBtn" type="button" class="secondary-btn">Volver al día foco</button>
-                        </div>
-                    </div>
-                    <svg class="chart" viewBox="0 0 1100 315" role="img" aria-label="Gráfico de líneas de los ritmos físico, emocional e intelectual a lo largo del tiempo. La línea central representa cero; por encima, valores positivos; por debajo, valores negativos.">
-                        <defs>
-                            <linearGradient id="bgFade" x1="0" x2="1">
-                                <stop offset="0%" stop-color="rgba(255,255,255,0.05)"></stop>
-                                <stop offset="100%" stop-color="rgba(255,255,255,0.01)"></stop>
-                            </linearGradient>
-                        </defs>
-                        <rect x="0" y="0" width="1100" height="315" rx="0" fill="none"></rect>
-                        <g id="grid"></g>
-                        <g id="paths"></g>
-                        <g id="markers"></g>
-                    </svg>
-                    <div class="legend">
-                        <span><i class="dot" style="background: var(--physical)"></i> Físico</span>
-                        <span><i class="dot" style="background: var(--emotional)"></i> Emocional</span>
-                        <span><i class="dot" style="background: var(--intellectual)"></i> Intelectual</span>
-                    </div>
-                </section>
-                <section class="reflection-note" aria-labelledby="reflectionTitle">
-                    <h2 id="reflectionTitle">Sugerencia para observar</h2>
-                    <p>Compara el valor del modelo con lo que notas hoy.</p>
-                </section>
-                <div class="controls-bar">
-                    <form method="get" class="date-control-form">
-                        <input type="hidden" name="preset" id="compatPresetInput" value="<?= htmlspecialchars($compatPresetInput) ?>">
-                        <input type="hidden" name="birth" value="<?= htmlspecialchars($birthInput) ?>">
-                        <input type="hidden" name="partner_birth" value="<?= htmlspecialchars($partnerBirthInput) ?>">
-                        <label for="focusDateInput">Día de lectura
-                            <input id="focusDateInput" type="date" name="focus" value="<?= htmlspecialchars($focusInput) ?>">
-                        </label>
-                        <button type="submit" class="bar-submit">Abrir día</button>
-                    </form>
-                    <div class="bar-slider">
-                        <label for="windowSlider">Recorrer fechas cercanas</label>
-                        <input id="windowSlider" type="range" min="0" max="<?= (int) (count($window) - 1) ?>" value="<?= $selectedIndex ?>" aria-describedby="selectedLabel">
-                        <div class="footer-note" id="selectedLabel" aria-live="polite">
-                            <?= htmlspecialchars($selectedPoint['label']) ?>
-                        </div>
-                    </div>
-                </div>
-                <p class="disclaimer">
-                    Los biorritmos son un modelo clásico sin validez predictiva demostrada (Hines, 1998, <em>Psychological Reports</em> 83).
-                    Úsalos como marco de reflexión y autoobservación, no para decisiones médicas, financieras o legales.
-                    La numerología y la astrología de esta página son marcos simbólicos, no evidencia empírica.
-                </p>
-                </article>
-            </div>
-        </section>
-
-        <nav class="tool-index" id="explorar" aria-labelledby="toolsTitle">
-            <div>
-                <h2 id="toolsTitle">Explorar herramientas</h2>
-                <p>La lectura y el gráfico siguen siendo el punto de partida.</p>
-            </div>
-            <div class="tool-links">
-                <a href="#forecast">Próximos días</a>
-                <a href="#events">Días especiales</a>
-                <a href="#extremeDays">Días extremos</a>
-                <a href="#compatibility">Compatibilidad</a>
-                <a href="#decisions">Ideas del modelo</a>
-                <a href="#ritual">Ritual diario</a>
-                <a href="#context">Contexto simbólico</a>
-                <a href="#monthCalendar">Calendario</a>
-                <a href="#diary">Diario local</a>
-                <a href="#chrono">Cronotipo</a>
-                <a href="#prefs">Avisos y datos</a>
-                <a href="#story">Lectura narrada</a>
-                <a href="#share">Compartir</a>
-                <a href="#widget">Widget</a>
-                <a href="#api">API</a>
-            </div>
-        </nav>
-
-        <section class="section card forecast-card" id="forecast">
-            <div class="events-head">
-                <div>
-                    <h2>Próximos días</h2>
-                    <p>Una vista breve del modelo para seguir explorando.</p>
-                </div>
-            </div>
-            <div class="hero-forecast-chips" id="heroForecastChips" aria-live="polite"></div>
-        </section>
-
-        <section class="section card events-card" id="events">
-            <div class="events-head">
-                <div>
-                    <h2>Días especiales</h2>
-                    <p>Picos, valles y cruces de cero en la ventana de 90 días.</p>
-                </div>
-                <div class="status-pill" id="eventsPill">—</div>
-            </div>
-            <div class="events-list" id="eventsList"></div>
-        </section>
-
-        <section class="section card extreme-card" id="extremeDays">
-            <div class="extreme-head">
-                <div>
-                    <h2>Días extremos</h2>
-                    <p>Días futuros con media superior al +<?= $extremePercent ?>% o inferior al −<?= $extremePercent ?>%.</p>
-                </div>
-                <div class="status-pill" id="extremePill">—</div>
-            </div>
-            <div class="extreme-grid" id="extremeGrid"></div>
-        </section>
-
-        <section class="section card compat-card" id="compatibility">
-            <div class="compat-head">
-                <div>
-                    <h2>Modo compatibilidad</h2>
-                    <p>Compara dos perfiles en el día actual y en la próxima semana.</p>
-                </div>
-                <div class="status-pill" id="compatSummaryPill">Listo para comparar</div>
-            </div>
-            <div class="compat-grid">
-                <div class="compat-score">
-                    <small>Similitud matemática entre ciclos</small>
-                    <strong id="compatScore"><?= htmlspecialchars(number_format($focusCompatibility * 100, 1, '.', '')) ?>%</strong>
-                    <p id="compatNarrative">
-                        <?= htmlspecialchars('Se calculó una comparación inicial usando ' . $focusInput . ' y ' . $partnerBirthInput . '.') ?> No mide compatibilidad personal.
-                    </p>
-                    <div class="compat-inputs">
-                        <label>
-                            Otra persona
-                            <input id="partnerBirthInput" type="date" value="<?= htmlspecialchars($partnerBirthInput) ?>">
-                        </label>
-                    </div>
-                    <div class="compat-export-row">
-                        <button id="exportCompatBtn" type="button" class="secondary-btn">Exportar compatibilidad</button>
-                    </div>
-                </div>
-                <div>
-                    <div class="compat-strip" id="compatStrip" role="region" aria-label="Comparación diaria desplazable" tabindex="0"></div>
-                    <div class="compat-heatmap">
-                        <h3>Mapa semanal</h3>
-                        <div class="compat-heatmap-grid" id="compatHeatmap" role="region" aria-label="Comparación semanal desplazable" tabindex="0"></div>
-                    </div>
-                    <div class="compat-footer" id="compatFooter"></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="section card decision-card" id="decisions">
-            <div class="decision-head">
-                <div>
-                    <h2>Ideas del modelo</h2>
-                    <p>Lecturas orientativas para reflexionar; no son instrucciones ni una base para decisiones importantes.</p>
-                </div>
-                <div class="status-pill" id="decisionBadge">Listo para decidir</div>
-            </div>
-            <div class="decision-grid">
-                <article class="decision-panel">
-                    <small>Idea para considerar</small>
-                    <strong id="decisionAction">Cargando</strong>
-                    <p id="decisionWhy">La lectura del día se está calculando.</p>
-                    <div class="decision-tags" id="decisionTags"></div>
-                </article>
-                <div class="decision-calendar">
-                    <h3>Calendario de acciones</h3>
-                    <div class="decision-calendar-grid" id="decisionCalendar"></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="section card ritual-card" id="ritual">
-            <div class="ritual-head">
-                <div>
-                    <h2>Ritual diario</h2>
-                    <p>Una secuencia breve de reflexión, opcional y orientativa.</p>
-                </div>
-                <div class="status-pill" id="ritualBadge">Foco listo</div>
-            </div>
-            <div class="ritual-grid">
-                <article class="ritual-panel">
-                    <small>Secuencia de hoy</small>
-                    <ol class="ritual-list" id="ritualLines">
-                        <li>Cargando ritual...</li>
-                        <li>...</li>
-                        <li>...</li>
-                    </ol>
-                    <div class="button-row">
-                        <button id="copyRitualBtn" type="button" class="secondary-btn">Copiar ritual</button>
-                    </div>
-                </article>
-                <article class="ritual-panel">
-                    <small>Foco del día</small>
-                    <strong id="ritualFocus">Preparando lectura</strong>
-                    <p id="ritualWhy">El ritual se construye a partir de la lectura actual y la mejor ventana de la semana.</p>
-                    <div class="decision-tags" id="ritualTags"></div>
-                    <div class="ritual-note" id="ritualNote">Corto, accionable y sin ruido: útil para arrancar con intención.</div>
-                </article>
-            </div>
-        </section>
-
-        <section class="section card extreme-card" id="context">
-            <div class="extreme-head">
-                <div>
-                    <h2>Contexto del día</h2>
-                    <p>Marco simbólico para la fecha de foco (<?= htmlspecialchars($focusInput) ?>). Es orientativo, no predictivo.</p>
-                </div>
-            </div>
-            <div class="context-grid">
-                <div class="context-item">
-                    <small>Signo solar</small>
-                    <strong><?= htmlspecialchars($sunSign['name']) ?></strong>
-                    <p><?= htmlspecialchars($sunSign['element'] . ' · ' . $sunSign['modality']) ?><?= $sunSign['cusp'] ? ' · cúspide: el cambio de signo varía ±1 día según el año' : '' ?></p>
-                </div>
-                <div class="context-item">
-                    <small>Camino de vida</small>
-                    <strong><?= (int) $lifePath ?> · <?= htmlspecialchars($lifePathInfo['name']) ?></strong>
-                    <p><?= htmlspecialchars($lifePathInfo['keywords']) ?></p>
-                </div>
-                <div class="context-item">
-                    <small>Día personal</small>
-                    <strong><?= (int) $personal['day'] ?> · <?= htmlspecialchars(Numerology::meaning($personal['day'])['name']) ?></strong>
-                    <p>Mes <?= (int) $personal['month'] ?> · año <?= (int) $personal['year'] ?>. <?= htmlspecialchars(Numerology::meaning($personal['day'])['keywords']) ?></p>
-                </div>
-                <div class="context-item">
-                    <small>Fase lunar</small>
-                    <strong><?= htmlspecialchars($moon['name']) ?></strong>
-                    <p>Iluminación ≈ <?= (int) round($moon['illumination'] * 100) ?>% · edad ≈ <?= number_format($moon['age_days'], 1, '.', '') ?> días (precisión de ±1 día).</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="section card extreme-card" id="monthCalendar">
-            <div class="extreme-head">
-                <div>
-                    <h2>Calendario de <?= htmlspecialchars($month['label']) ?></h2>
-                    <p>Media diaria de los tres ritmos y días críticos (cruces por cero).</p>
-                </div>
-                <div class="month-nav">
-                    <a class="secondary-btn" href="<?= htmlspecialchars($monthLink($prevMonth)) ?>">← Mes anterior</a>
-                    <a class="secondary-btn" href="<?= htmlspecialchars($monthLink($nextMonth)) ?>">Mes siguiente →</a>
-                    <a class="secondary-btn" href="<?= htmlspecialchars($icsLink) ?>" download>Días críticos (.ics)</a>
-                </div>
-            </div>
-            <div class="month-calendar-scroll" role="region" aria-label="Calendario mensual desplazable" tabindex="0">
-            <table class="month-grid" aria-label="Calendario de <?= htmlspecialchars($month['label']) ?>">
-                <thead><tr>
-<?php foreach (['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as $dow): ?>
-                    <th class="month-dow" scope="col"><?= $dow ?></th>
-<?php endforeach; ?>
-                </tr></thead>
-                <tbody>
-<?php foreach ($month['weeks'] as $week): ?>
-                <tr>
-<?php foreach ($week as $cell): ?>
-<?php if ($cell === null): ?>
-                    <td class="month-cell is-pad" aria-hidden="true"></td>
-<?php else: ?>
-                    <td class="month-cell" data-level="<?= htmlspecialchars($cell['level']) ?>">
-                        <a class="month-cell-link<?= $cell['is_focus'] ? ' is-focus' : '' ?>"
-                           href="<?= htmlspecialchars($monthLink($cell['date'])) ?>"
-                           aria-label="Día <?= (int) $cell['day'] ?>, media <?= round($cell['avg'] * 100) ?>%<?= $cell['critical'] > 0 ? ', día crítico ' . ['', 'simple', 'doble', 'triple'][$cell['critical']] : '' ?>">
-                            <strong><?= (int) $cell['day'] ?></strong>
-                            <span class="month-average" aria-hidden="true"><?= (int) round($cell['avg'] * 100) ?>%</span><?= $cell['critical'] > 0 ? ' ' . str_repeat('●', $cell['critical']) : '' ?>
-                        </a>
-                    </td>
-<?php endif; ?>
-<?php endforeach; ?>
-                </tr>
-<?php endforeach; ?>
-                </tbody>
-            </table>
-            </div>
-            <p class="month-legend">
-                Verde: media ≥ +35% · Ámbar: entre −15% y +35% · Rojo: por debajo de −15%. ● = ritmos que cruzan cero ese día (1 simple, 2 doble, 3 triple).
-            </p>
-        </section>
-
-        <section class="section card extreme-card" id="diary">
-            <div class="extreme-head">
-                <div>
-                    <h2>Diario de autoobservación</h2>
-                    <p>Anota cómo te encuentras (1 = bajo, 5 = alto) y comprueba si tus datos siguen las curvas. Se guarda solo en este navegador.</p>
-                </div>
-                <div class="status-pill" id="diaryCount">0 registros</div>
-            </div>
-            <form class="diary-form" id="diaryForm" autocomplete="off">
-                <label>Día
-                    <input type="date" id="diaryDate" value="<?= htmlspecialchars($focusInput) ?>" min="<?= DateInput::MIN ?>" max="<?= DateInput::MAX ?>" required>
-                </label>
-                <label>Energía física
-                    <select id="diaryEnergy"><?php foreach ([1, 2, 3, 4, 5] as $n): ?><option value="<?= $n ?>"<?= $n === 3 ? ' selected' : '' ?>><?= $n ?></option><?php endforeach; ?></select>
-                </label>
-                <label>Estado de ánimo
-                    <select id="diaryMood"><?php foreach ([1, 2, 3, 4, 5] as $n): ?><option value="<?= $n ?>"<?= $n === 3 ? ' selected' : '' ?>><?= $n ?></option><?php endforeach; ?></select>
-                </label>
-                <label>Claridad mental
-                    <select id="diaryFocus"><?php foreach ([1, 2, 3, 4, 5] as $n): ?><option value="<?= $n ?>"<?= $n === 3 ? ' selected' : '' ?>><?= $n ?></option><?php endforeach; ?></select>
-                </label>
-                <button type="submit" class="bar-submit">Guardar día</button>
-            </form>
-            <div class="footer-note" id="diaryStatus" role="status"></div>
-<?php if ($birthIsExample): ?>
-            <p class="diary-caveat">Estás usando la fecha de ejemplo (<?= htmlspecialchars($defaultBirth) ?>): la correlación solo tiene sentido con tu fecha real.</p>
-<?php endif; ?>
-            <table class="diary-table" id="diaryTable">
-                <thead><tr><th>Curva ↔ lo que anotas</th><th>Registros</th><th>Correlación (r)</th><th>IC 95%</th><th>Lectura</th></tr></thead>
-                <tbody id="diaryRows"></tbody>
-            </table>
-            <p class="diary-caveat">
-                Se necesitan al menos 14 registros por ritmo. La correlación no implica causa. Los días consecutivos no son independientes,
-                así que el intervalo es optimista. Con pocos datos, el resultado es sobre todo ruido: «sin relación apreciable» es un resultado válido.
-            </p>
-            <div class="diary-actions">
-                <button type="button" class="secondary-btn" id="diaryExport">Exportar JSON</button>
-                <label class="secondary-btn" style="cursor:pointer">Importar JSON
-                    <input type="file" id="diaryImport" accept="application/json,.json" hidden>
-                </label>
-                <button type="button" class="secondary-btn" id="diaryForget">Olvidar mis datos</button>
-            </div>
-        </section>
-
-        <section class="section card extreme-card" id="chrono">
-            <div class="extreme-head">
-                <div>
-                    <h2>Cronotipo y ritmo del día</h2>
-                    <p>Plantilla orientativa a partir de tu hora de despertar, y un cuestionario corto de cronotipo.</p>
-                </div>
-                <div class="status-pill" id="chronoPill">Sin datos</div>
-            </div>
-            <form class="diary-form" id="wakeForm" autocomplete="off">
-                <label>Hora a la que te despiertas
-                    <input type="time" id="chronoWake" required>
-                </label>
-                <button type="submit" class="bar-submit">Ver mi día</button>
-            </form>
-            <div id="chronoSchedule"></div>
-            <h3 style="margin:22px 0 8px;font-size:1rem">Cuestionario de cronotipo</h3>
-            <form id="chronoForm" autocomplete="off"></form>
-            <div class="footer-note" id="chronoStatus" role="status"></div>
-            <div id="chronoResult"></div>
-            <p class="diary-caveat">
-                Las horas son reglas generales (luz por la mañana, valle tras la comida unas 8 h después de despertar, café hasta unas 8 h antes de dormir),
-                no mediciones de tu reloj biológico. El cuestionario es una adaptación propia inspirada en el rMEQ (Adan y Almirall, 1991):
-                mantiene su rango (4–25) y sus tres grupos, pero no es el instrumento validado ni un diagnóstico.
-                Los bloques de 90 min parten del ciclo básico reposo-actividad; la evidencia de que sea el ritmo ideal de trabajo es limitada.
-            </p>
-        </section>
-
-        <section class="section card extreme-card" id="prefs">
-            <div class="extreme-head">
-                <div>
-                    <h2>Avisos y datos guardados</h2>
-                    <p>Todo se guarda solo en este navegador; no hay cuenta ni servidor.</p>
-                </div>
-            </div>
-            <div class="diary-actions">
-                <button type="button" class="secondary-btn" id="notifyToggle">Activar avisos de días críticos</button>
-                <button type="button" class="secondary-btn" id="forgetProfile" hidden>Olvidar mi fecha y preferencias</button>
-            </div>
-            <div class="footer-note" id="prefsStatus" role="status"></div>
-            <p class="diary-caveat">
-                El aviso aparece al abrir la app el día crítico o el anterior. No hay servidor que envíe notificaciones en segundo plano,
-                así que si no abres la app, no se avisa.
-            </p>
-        </section>
-
-        <section class="section card story-card" id="story">
-            <div class="story-head">
-                <div>
-                    <h2>Story mode</h2>
-                    <p>La lectura se narra como una secuencia de escenas, no solo como números.</p>
-                </div>
-                <div class="status-pill" id="storyProgress">Escena 1 / 4</div>
-            </div>
-            <div class="story-stage">
-                <div class="story-slide" id="storySlide">
-                    <div class="story-kicker" id="storyKicker">Inicio</div>
-                    <h3 class="story-title" id="storyTitle">Tu día de foco</h3>
-                    <p class="story-copy" id="storyCopy"></p>
-                    <div class="story-grid">
-                        <div class="story-stat">
-                            <small>Físico</small>
-                            <strong id="storyPhysical">0.0%</strong>
-                        </div>
-                        <div class="story-stat">
-                            <small>Emocional</small>
-                            <strong id="storyEmotional">0.0%</strong>
-                        </div>
-                        <div class="story-stat">
-                            <small>Intelectual</small>
-                            <strong id="storyIntellectual">0.0%</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="story-footer">
-                    <div class="story-dots" id="storyDots"></div>
-                    <button id="storyAutoBtn" type="button" class="secondary-btn story-pause-btn">Reanudar reproducción</button>
-                </div>
-                <div class="story-progress-bar"><div class="story-progress-fill" id="storyProgressFill"></div></div>
-            </div>
-        </section>
-
-        <section class="section card share-card" id="share">
-            <div class="share-preview" id="sharePreview">
-                <div class="share-badge">Tarjeta para compartir</div>
-                <h2 class="share-title" id="shareTitle"><?= htmlspecialchars($profileLabel) ?></h2>
-                <p class="share-subtitle" id="shareSubtitle">
-                    <?= htmlspecialchars($selectedPoint['label']) ?> · nacimiento <?= htmlspecialchars($birthInput) ?> · foco <?= htmlspecialchars($focusInput) ?>
-                </p>
-                <div class="share-metrics">
-                    <div class="share-metric">
-                        <small>Físico</small>
-                        <strong id="sharePhysical"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['physical'])) ?></strong>
-                    </div>
-                    <div class="share-metric">
-                        <small>Emocional</small>
-                        <strong id="shareEmotional"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['emotional'])) ?></strong>
-                    </div>
-                    <div class="share-metric">
-                        <small>Intelectual</small>
-                        <strong id="shareIntellectual"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['intellectual'])) ?></strong>
-                    </div>
-                </div>
-                <div class="status-pill" id="shareStatus"><?= htmlspecialchars($focusSummary) ?></div>
-            </div>
-            <div class="share-side">
-                <div class="panel-head" style="margin:0;">
-                    <div>
-                        <h2>Tarjeta compartible</h2>
-                        <p>Lista para exportar como PNG sin instalar nada más.</p>
-                    </div>
-                </div>
-                <div class="button-row">
-                    <button id="copySummaryBtn" type="button" class="secondary-btn">Copiar resumen</button>
-                    <button id="copyLinkBtn" type="button" class="secondary-btn">Copiar enlace</button>
-                </div>
-                <div class="footer-note">
-                    Exporta una tarjeta visual con el pico del día y los tres ritmos. Lista para compartir en redes.
-                </div>
-            </div>
-        </section>
-
-        <section class="section card widget-card" id="widget">
-            <div class="widget-head">
-                <div>
-                    <h2>Widget embebible</h2>
-                    <p>Puedes insertarlo en un README, una web personal o un dashboard interno.</p>
-                </div>
-                <div class="status-pill">iframe listo</div>
-            </div>
-            <div class="widget-grid">
-                <article class="widget-panel">
-                    <div class="widget-preview-mini">
-                        <div class="share-badge">Widget</div>
-                        <strong><?= htmlspecialchars($profileLabel) ?></strong>
-                        <p><?= htmlspecialchars($selectedPoint['label']) ?> · nacimiento <?= htmlspecialchars($birthInput) ?> · foco <?= htmlspecialchars($focusInput) ?></p>
-                    </div>
-                    <div class="widget-chart-shell">
-                        <div class="widget-chart-title">
-                            <strong>Curvas centradas en hoy</strong>
-                            <span>31 días · detalle al pasar el puntero</span>
-                        </div>
-                        <svg id="widgetChart" class="widget-chart" viewBox="0 0 640 190" role="img" aria-label="Curvas de biorritmos centradas en hoy">
-                            <g id="widgetChartGrid"></g>
-                            <g id="widgetChartPaths"></g>
-                            <g id="widgetChartMarkers"></g>
-                        </svg>
-                        <p class="chart-text-alternative">El gráfico compara los tres ritmos durante 31 días. Sus valores del día de foco aparecen en las tarjetas que siguen.</p>
-                        <details class="widget-data-details">
-                            <summary>Consultar los valores diarios del gráfico</summary>
-                            <table class="widget-data-table">
-                                <caption>Valores diarios de los ritmos durante los 31 días centrados en hoy</caption>
-                                <thead>
-                                    <tr><th scope="col">Día</th><th scope="col">Físico</th><th scope="col">Emocional</th><th scope="col">Intelectual</th></tr>
-                                </thead>
-                                <tbody id="widgetChartData"></tbody>
-                            </table>
-                        </details>
-                        <div id="widgetChartTooltip" class="widget-chart-tooltip" aria-hidden="true"></div>
-                    </div>
-                    <div class="widget-mini-stats">
-                        <div class="widget-mini-stat">
-                            <small>Físico</small>
-                            <strong><?= htmlspecialchars(valueToPercent($selectedPoint['physical'])) ?></strong>
-                        </div>
-                        <div class="widget-mini-stat">
-                            <small>Emocional</small>
-                            <strong><?= htmlspecialchars(valueToPercent($selectedPoint['emotional'])) ?></strong>
-                        </div>
-                        <div class="widget-mini-stat">
-                            <small>Intelectual</small>
-                            <strong><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
-                        </div>
-                    </div>
-                    <div class="widget-note">
-                        <?= htmlspecialchars('Incluye el estado de la URL, así que el widget se puede compartir y rehidratar con la misma lectura.') ?>
-                    </div>
-                </article>
-                <div class="widget-panel">
-                    <div class="widget-code">
-                        <small>Snippet</small>
-                        <textarea id="widgetSnippet" readonly><?= htmlspecialchars($widgetSnippet) ?></textarea>
-                        <div class="button-row">
-                            <button id="copyWidgetBtn" type="button" class="secondary-btn">Copiar iframe</button>
-                            <a id="openWidgetBtn" href="<?= htmlspecialchars($widgetUrl) ?>" target="_blank" rel="noopener" class="secondary-btn">Abrir widget</a>
-                        </div>
-                    </div>
-                    <iframe
-                        id="widgetFrame"
-                        class="widget-frame"
-                        title="Biorrhythms widget preview"
-                        loading="lazy"
-                        src="<?= htmlspecialchars($widgetPreviewUrl) ?>"
-                    ></iframe>
-                </div>
-            </div>
-        </section>
-
-        <section class="section card api-card" id="api">
-            <div class="api-head">
-                <div>
-                    <h2>API pública</h2>
-                    <p>JSON listo para integrar en scripts, dashboards o automatizaciones.</p>
-                </div>
-                <div class="status-pill" id="apiStatus">Sin consultar</div>
-            </div>
-            <div class="api-grid">
-                <article class="api-panel">
-                    <small>Endpoint</small>
-                    <strong>/api/</strong>
-                    <p>Devuelve el perfil actual, el forecast de 7 días, la compatibilidad y los enlaces canónicos en JSON.</p>
-                    <div class="api-snippet">
-                        <small>curl</small>
-                        <textarea id="apiSnippet" readonly><?= htmlspecialchars($apiSnippet) ?></textarea>
-                        <div class="button-row">
-                            <button id="copyApiBtn" type="button" class="secondary-btn">Copiar curl</button>
-                            <a id="openApiBtn" href="<?= htmlspecialchars($apiUrl) ?>" target="_blank" rel="noopener" class="secondary-btn">Abrir JSON</a>
-                        </div>
-                    </div>
-                </article>
-                <article class="api-panel">
-                    <small>Preview JSON</small>
-                    <pre id="apiPreview" class="api-preview">Cargando preview...</pre>
-                    <button class="api-preview-toggle" id="apiPreviewToggle" onclick="(function(){const p=document.getElementById('apiPreview'),b=document.getElementById('apiPreviewToggle');p.classList.toggle('expanded');b.textContent=p.classList.contains('expanded')?'▲ Ocultar resto':'▼ Ver completo';})()">▼ Ver completo</button>
-                </article>
-            </div>
-        </section>
     </main>
 
+<?php if (!$showWelcome || $embedMode): ?>
     <script>
         const palette = {
             physical: getComputedStyle(document.body).getPropertyValue('--physical').trim(),
@@ -3765,6 +3169,7 @@ $seriesData = [
         const focusInput = <?= json_encode($focusInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const partnerBirthInputInitial = <?= json_encode($partnerBirthInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const birthIsExampleInitial = <?= json_encode($showWelcome) ?>;
+        const birthIsValidInitial = <?= json_encode($birthIsValidInitial) ?>;
         const compatPresetInputInitial = <?= json_encode($compatPresetInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const svgNS = 'http://www.w3.org/2000/svg';
         const width = 1100;
@@ -3779,6 +3184,13 @@ $seriesData = [
         const markersGroup = document.getElementById('markers');
         const slider = document.getElementById('windowSlider');
         const focusDateInput = document.getElementById('focusDateInput');
+        const focusDateForm = document.getElementById('focusDateForm');
+        const profileBirthForm = document.getElementById('profileBirthForm');
+        const profileBirthInput = document.getElementById('profileBirthInput');
+        const profileFocusInput = document.getElementById('profileFocusInput');
+        const previousReadingDay = document.getElementById('previousReadingDay');
+        const nextReadingDay = document.getElementById('nextReadingDay');
+        const todayReadingDay = document.getElementById('todayReadingDay');
         const readingDateHeading = document.getElementById('readingDateHeading');
         const readingWeekday = document.getElementById('readingWeekday');
         const calendarDayStamp = document.getElementById('calendarDayStamp');
@@ -3788,45 +3200,20 @@ $seriesData = [
         const copySummaryBtn = document.getElementById('copySummaryBtn');
         const copyLinkBtn = document.getElementById('copyLinkBtn');
         const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const heroForecastChips = document.getElementById('heroForecastChips');
         const zoomButtons = document.querySelectorAll('.zoom-btn');
 
         let visibleWindow = data.window;
         let visibleStartIndex = 0;
-        const decisionBadge = document.getElementById('decisionBadge');
-        const decisionAction = document.getElementById('decisionAction');
-        const decisionWhy = document.getElementById('decisionWhy');
-        const decisionTags = document.getElementById('decisionTags');
-        const decisionCalendar = document.getElementById('decisionCalendar');
         const widgetSnippet = document.getElementById('widgetSnippet');
         const copyWidgetBtn = document.getElementById('copyWidgetBtn');
         const openWidgetBtn = document.getElementById('openWidgetBtn');
         const widgetFrame = document.getElementById('widgetFrame');
+        const widgetDetails = document.getElementById('widgetDetails');
         const apiStatus = document.getElementById('apiStatus');
         const apiSnippet = document.getElementById('apiSnippet');
         const copyApiBtn = document.getElementById('copyApiBtn');
         const openApiBtn = document.getElementById('openApiBtn');
         const apiPreview = document.getElementById('apiPreview');
-        const ritualBadge = document.getElementById('ritualBadge');
-        const ritualLines = document.getElementById('ritualLines');
-        const ritualFocus = document.getElementById('ritualFocus');
-        const ritualWhy = document.getElementById('ritualWhy');
-        const ritualTags = document.getElementById('ritualTags');
-        const ritualNote = document.getElementById('ritualNote');
-        const copyRitualBtn = document.getElementById('copyRitualBtn');
-        const storyProgress = document.getElementById('storyProgress');
-        const storyKicker = document.getElementById('storyKicker');
-        const storyTitle = document.getElementById('storyTitle');
-        const storyCopy = document.getElementById('storyCopy');
-        const storyPhysical = document.getElementById('storyPhysical');
-        const storyEmotional = document.getElementById('storyEmotional');
-        const storyIntellectual = document.getElementById('storyIntellectual');
-        const storyAutoBtn = document.getElementById('storyAutoBtn');
-        const storySlide = document.getElementById('storySlide');
-        const storyDots = document.getElementById('storyDots');
-        const storyProgressFill = document.getElementById('storyProgressFill');
-        const storyStage = document.querySelector('.story-stage');
-        const STORY_INTERVAL = 5000;
         const partnerBirthInput = document.getElementById('partnerBirthInput');
         const presetInput = document.getElementById('compatPresetInput');
         const exportCompatBtn = document.getElementById('exportCompatBtn');
@@ -3845,8 +3232,6 @@ $seriesData = [
         const widgetChartData = document.getElementById('widgetChartData');
 
         let selectedIndex = data.selectedIndex;
-        let storyIndex = 0;
-        let storyTimer = null;
         const isEmbedView = document.body.classList.contains('embed-view');
         let theme = isEmbedView
             ? (document.body.dataset.theme || 'dark')
@@ -3866,7 +3251,6 @@ $seriesData = [
                 path.setAttribute('stroke', palette[path.dataset.series]);
             });
             if (widgetChartPaths?.childElementCount) updateWidgetChart();
-            updateWidgetEmbedSnippet();
         }
 
         function yFor(value) {
@@ -4149,8 +3533,9 @@ $seriesData = [
                 const fullLabel = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
                 const url = new URL(window.location.href);
                 url.searchParams.set('focus', isoDate);
+                url.hash = 'lectura';
                 if (birthIsExampleInitial) url.searchParams.delete('birth');
-                else url.searchParams.set('birth', birthInput);
+                else if (birthIsValidInitial) url.searchParams.set('birth', birthInput);
 
                 entry.children[0].textContent = String(date.getDate());
                 entry.children[1].textContent = monthYear.format(date).replace(/\./g, '');
@@ -4177,16 +3562,12 @@ $seriesData = [
             calendarDayStamp.textContent = `Día ${dayOfYear} de ${new Date(Date.UTC(year, 1, 29)).getUTCDate() === 29 ? 366 : 365}`;
             focusDateInput.value = point.date;
             updateDateRail(point.date);
-            const focusLabel = point.physical >= point.emotional && point.physical >= point.intellectual
-                ? 'Pico físico'
-                : point.emotional >= point.physical && point.emotional >= point.intellectual
-                    ? 'Pico emocional'
-                    : 'Pico intelectual';
             document.getElementById('stat-physical').textContent = formatSignedPercent(point.physical);
             document.getElementById('stat-emotional').textContent = formatSignedPercent(point.emotional);
             document.getElementById('stat-intellectual').textContent = formatSignedPercent(point.intellectual);
-            document.getElementById('shareTitle').textContent = focusLabel;
-            document.getElementById('shareSubtitle').textContent = `${point.label} · nacimiento ${birthInput} · foco ${point.date}`;
+            document.getElementById('shareTitle').textContent = 'Lectura del día';
+            document.getElementById('shareSubtitle').textContent = `${point.label} · fecha seleccionada ${point.date}`;
+            if (profileFocusInput) profileFocusInput.value = point.date;
             document.getElementById('sharePhysical').textContent = `${point.physical >= 0 ? '+' : ''}${(point.physical * 100).toFixed(1)}%`;
             document.getElementById('shareEmotional').textContent = `${point.emotional >= 0 ? '+' : ''}${(point.emotional * 100).toFixed(1)}%`;
             document.getElementById('shareIntellectual').textContent = `${point.intellectual >= 0 ? '+' : ''}${(point.intellectual * 100).toFixed(1)}%`;
@@ -4215,6 +3596,64 @@ $seriesData = [
                 : `${Math.abs(point.offset)} ${Math.abs(point.offset) === 1 ? 'día' : 'días'} ${point.offset < 0 ? 'antes' : 'después'} del foco`;
             document.getElementById('selectedLabel').textContent = `${point.label} · ${offsetText}`;
             updateForecast(index);
+        }
+
+        function selectedFocusDate() {
+            return data.window[selectedIndex]?.date || focusInput;
+        }
+
+        function syncReadingUrl(focusDate = selectedFocusDate()) {
+            const url = new URL(window.location.href);
+            if (birthIsExampleInitial) url.searchParams.delete('birth');
+            else if (birthIsValidInitial) url.searchParams.set('birth', birthInput);
+            url.searchParams.set('focus', focusDate);
+            url.searchParams.set('partner_birth', partnerBirthInput.value || partnerBirthInputInitial);
+
+            if (presetInput.value && presetInput.value !== 'custom') {
+                url.searchParams.set('preset', presetInput.value);
+            } else {
+                url.searchParams.delete('preset');
+            }
+
+            window.history.replaceState(window.history.state, '', url);
+            if (icsExportLink) {
+                const calendarUrl = new URL(icsExportLink.href, window.location.href);
+                calendarUrl.searchParams.set('from', focusDate);
+                calendarUrl.searchParams.set('days', '90');
+                if (birthIsValidInitial) calendarUrl.searchParams.set('birth', birthInput);
+                icsExportLink.href = `${calendarUrl.pathname}${calendarUrl.search}`;
+            }
+            return url;
+        }
+
+        function selectReadingDate(index, { refreshPreviews = false } = {}) {
+            const nextIndex = clamp(Number(index), 0, data.window.length - 1);
+            if (nextIndex < visibleStartIndex || nextIndex >= visibleStartIndex + visibleWindow.length) {
+                setZoom(visibleWindow.length, nextIndex);
+            }
+            slider.value = String(nextIndex);
+            updateSelected(nextIndex);
+            syncReadingUrl();
+            buildSpecialEvents(exploreHorizonDays);
+            buildExtremeDays();
+            if (refreshPreviews) refreshIntegrationPreviews();
+        }
+
+        function refreshIntegrationPreviews() {
+            updateWidgetEmbedSnippet();
+            updateApiPreview();
+        }
+
+        function navigateToReadingDate(date) {
+            const index = data.window.findIndex((point) => point.date === date);
+            if (index >= 0) {
+                selectReadingDate(index, { refreshPreviews: true });
+                return;
+            }
+            const url = syncReadingUrl(date);
+            url.hash = 'lectura';
+            window.history.replaceState(window.history.state, '', url);
+            window.location.reload();
         }
 
         function animateEntrance() {
@@ -4282,7 +3721,7 @@ $seriesData = [
         }
 
         function normalizePartnerBirthForPreset(preset) {
-            const baseDate = parseIsoDate(focusInput);
+            const baseDate = parseIsoDate(selectedFocusDate());
             const shiftDays = {
                 pair: 0,
                 friend: -42,
@@ -4310,178 +3749,13 @@ $seriesData = [
             }[preset] ?? 'Personalizado';
         }
 
-        function averageSeries(point) {
-            return (point.physical + point.emotional + point.intellectual) / 3;
-        }
-
-        function dominantSeries(point) {
-            const candidates = [
-                { key: 'physical', label: 'Físico', value: point.physical },
-                { key: 'emotional', label: 'Emocional', value: point.emotional },
-                { key: 'intellectual', label: 'Intelectual', value: point.intellectual },
-            ];
-
-            return candidates.reduce((carry, item) => (item.value > carry.value ? item : carry), candidates[0]);
-        }
-
-        function decisionForPoint(point) {
-            const avg = averageSeries(point);
-            const dominant = dominantSeries(point);
-
-            if (avg >= 0.35) {
-                if (dominant.key === 'physical') {
-                    return {
-                        badge: 'Ventana de empuje',
-                        action: 'Entrena fuerte o resuelve lo físico',
-                        why: 'El cuerpo lidera y la media general acompaña: conviene usar esta lectura para movimiento, entrega o acciones que consumen energía.',
-                        tags: ['Entrenar', 'Cerrar tareas', 'Mover agenda'],
-                    };
-                }
-
-                if (dominant.key === 'emotional') {
-                    return {
-                        badge: 'Ventana social',
-                        action: 'Toma conversaciones importantes',
-                        why: 'La parte emocional está arriba y la ventana es favorable para vínculo, feedback o conversaciones que requieren tacto.',
-                        tags: ['Conversar', 'Escuchar', 'Alinear'],
-                    };
-                }
-
-                return {
-                    badge: 'Ventana mental',
-                    action: 'Escribe, decide y estructura',
-                    why: 'El ritmo intelectual domina y el promedio acompaña, así que es buen momento para escribir, planificar o cerrar decisiones.',
-                    tags: ['Escribir', 'Planificar', 'Resolver'],
-                };
-            }
-
-            if (avg >= 0.1) {
-                if (dominant.key === 'physical') {
-                    return {
-                        badge: 'Ritmo estable',
-                        action: 'Haz trabajo útil y sin sobrecarga',
-                        why: 'La energía física ayuda, pero sin exceso. Va mejor para avanzar paso a paso y evitar maratones innecesarias.',
-                        tags: ['Progreso', 'Ritmo', 'Sin prisa'],
-                    };
-                }
-
-                if (dominant.key === 'emotional') {
-                    return {
-                        badge: 'Ritmo sensible',
-                        action: 'Ajusta conversaciones y responde con calma',
-                        why: 'La lectura emocional tira del día; funciona mejor para coordinar, cuidar el tono y no forzar decisiones duras.',
-                        tags: ['Coordinación', 'Calma', 'Feedback'],
-                    };
-                }
-
-                return {
-                    badge: 'Ritmo analítico',
-                    action: 'Prioriza foco corto y revisión',
-                    why: 'El intelecto sostiene el día, pero la energía total no es alta: mejor una lista corta que un proyecto interminable.',
-                    tags: ['Revisar', 'Sintetizar', 'Priorizar'],
-                };
-            }
-
-            if (avg >= -0.15) {
-                return {
-                    badge: 'Ventana neutra',
-                    action: 'Mantén el ritmo y simplifica',
-                    why: 'No hay un pico claro, así que la mejor jugada es bajar fricción, limpiar pendientes y no meter demasiada carga.',
-                    tags: ['Ordenar', 'Reducir', 'Mantener'],
-                };
-            }
-
-            return {
-                badge: 'Ventana de recuperación',
-                action: 'Baja intensidad y reserva energía',
-                why: 'La lectura general está baja: sirve más para descansar, documentar o hacer tareas mecánicas que para empujar fuerte.',
-                tags: ['Descansar', 'Documentar', 'Recuperar'],
-            };
-        }
-
-        function buildDecisionDayCard(point, isBest, isWorst) {
-            const decision = decisionForPoint(point);
-            const card = document.createElement('article');
-            card.className = `decision-day${isBest ? ' is-best' : ''}${isWorst ? ' is-worst' : ''}`;
-            card.innerHTML = `
-                <small>${point.label}</small>
-                <strong>${decision.action}</strong>
-                <p>${decision.why}</p>
-                <div class="status-pill">${Math.round(averageSeries(point) * 100)}% media</div>
-                <div class="decision-action">${isBest ? 'Mejor uso del día' : isWorst ? 'Día de cuidado' : decision.badge}</div>
-            `;
-            return card;
-        }
-
-        function updateDecisionAssistant(index) {
-            const forecastWindow = forecastSliceFrom(index);
-            const scored = forecastWindow.map((point) => ({
-                ...point,
-                score: averageSeries(point),
-            }));
-            const best = scored.reduce((carry, point) => (point.score > carry.score ? point : carry), scored[0]);
-            const worst = scored.reduce((carry, point) => (point.score < carry.score ? point : carry), scored[0]);
-            const current = decisionForPoint(data.window[index]);
-            const dominant = dominantSeries(data.window[index]);
-
-            decisionBadge.textContent = current.badge;
-            decisionAction.textContent = current.action;
-            decisionWhy.textContent = current.why;
-            decisionTags.innerHTML = current.tags.map((tag) => `<span class="decision-tag">${tag}</span>`).join('');
-
-            decisionCalendar.innerHTML = '';
-            scored.forEach((point) => {
-                decisionCalendar.appendChild(buildDecisionDayCard(point, point.date === best.date, point.date === worst.date));
-            });
-
-            heroForecastChips.innerHTML = `
-                <span class="hero-forecast-chip is-best"><strong>Mejor</strong> ${best.label} · ${Math.round(best.score * 100)}%</span>
-                <span class="hero-forecast-chip is-worst"><strong>Valle</strong> ${worst.label} · ${Math.round(worst.score * 100)}%</span>
-            `;
-
-            if (best.date === data.window[index].date) {
-                decisionBadge.textContent = `${current.badge} · mejor día`;
-            } else {
-                decisionBadge.textContent = `${current.badge} · ${best.label} lidera la semana`;
-            }
-
-            if (dominant.key === 'emotional' && current.badge !== 'Ventana de recuperación') {
-                decisionWhy.textContent = `${current.why} Hoy domina la lectura emocional, así que el tono importa más que la velocidad.`;
-            }
-        }
-
-        function updateRitual(index) {
-            const ritual = data.rituals[index];
-
-            ritualBadge.textContent = ritual.badge;
-            ritualFocus.textContent = ritual.focus;
-            ritualWhy.textContent = ritual.why;
-            ritualNote.textContent = ritual.note;
-            ritualLines.innerHTML = ritual.lines.map((line) => `<li>${line}</li>`).join('');
-            ritualTags.innerHTML = ritual.tags.map((tag) => `<span class="decision-tag">${tag}</span>`).join('');
+        function syncCompatibilityUrl() {
+            return syncReadingUrl();
         }
 
         function activeCompatibilityPreset() {
             const active = Array.from(compatPresetButtons).find((button) => button.classList.contains('is-active'));
-            return active?.dataset.compatPreset ?? 'custom';
-        }
-
-        function syncCompatibilityUrl() {
-            const url = new URL(window.location.href);
-            // Never write the example birth into the URL: it would be saved later as if it were the user's own.
-            if (!birthIsExampleInitial) url.searchParams.set('birth', birthInput);
-            url.searchParams.set('focus', focusDateInput.value || focusInput);
-            url.searchParams.set('partner_birth', partnerBirthInput.value || partnerBirthInputInitial);
-
-            if (presetInput.value && presetInput.value !== 'custom') {
-                url.searchParams.set('preset', presetInput.value);
-            } else {
-                url.searchParams.delete('preset');
-            }
-
-            window.history.replaceState({}, '', url);
-            updateWidgetEmbedSnippet();
-            updateApiPreview();
+            return active?.dataset.compatPreset ?? presetInput.value ?? 'custom';
         }
 
         function clamp(value, min, max) {
@@ -4512,7 +3786,7 @@ $seriesData = [
             const url = new URL(window.location.origin);
             url.pathname = '/api/';
             url.searchParams.set('birth', birthInput);
-            url.searchParams.set('focus', focusInput);
+            url.searchParams.set('focus', selectedFocusDate());
             url.searchParams.set('partner_birth', partnerBirthInput.value || partnerBirthInputInitial);
 
             if (presetInput.value && presetInput.value !== 'custom') {
@@ -4534,7 +3808,7 @@ $seriesData = [
             widgetSnippet.value = snippet;
             openWidgetBtn.href = widgetUrl;
 
-            if (!document.body.classList.contains('embed-view')) {
+            if (!document.body.classList.contains('embed-view') && widgetDetails?.open) {
                 widgetFrame.src = widgetUrl;
             }
         }
@@ -4560,12 +3834,6 @@ $seriesData = [
             }
         }
 
-        function ritualText() {
-            return Array.from(ritualLines.querySelectorAll('li'))
-                .map((item) => item.textContent.trim())
-                .join('\n');
-        }
-
         function forecastSliceFrom(index, length = 7) {
             const end = Math.min(index + length, data.window.length);
             return data.window.slice(index, end);
@@ -4577,7 +3845,7 @@ $seriesData = [
             card.className = `compat-day${isBest ? ' is-best' : ''}${isWorst ? ' is-worst' : ''}`;
             card.innerHTML = `
                 <strong>${point.label}</strong>
-                <span>${Math.round(result.score * 100)}% match</span>
+                <span>${Math.round(result.score * 100)}% de solapamiento</span>
                 <div class="compat-meter">
                     ${result.rhythms.map((rhythm) => {
                         const color = rhythm.label === 'Físico'
@@ -4605,7 +3873,7 @@ $seriesData = [
             cell.dataset.scoreLevel = level;
             cell.innerHTML = `
                 <strong>${point.label}</strong>
-                <span>${Math.round(result.score * 100)}% match</span>
+                <span>${Math.round(result.score * 100)}% de solapamiento</span>
             `;
             return cell;
         }
@@ -4637,69 +3905,104 @@ $seriesData = [
 
         const eventsList = document.getElementById('eventsList');
         const eventsPill = document.getElementById('eventsPill');
+        const exploreHorizonButtons = document.querySelectorAll('[data-explore-horizon="7"], [data-explore-horizon="30"], [data-explore-horizon="90"]');
+        const cycleExtremeReveal = document.getElementById('cycleExtremeReveal');
+        const cycleExtremeMore = document.getElementById('cycleExtremeMore');
+        const cycleExtremeLess = document.getElementById('cycleExtremeLess');
+        const extremeGrid = document.getElementById('extremeGrid');
+        const extremePill = document.getElementById('extremePill');
+        const icsExportLink = document.getElementById('icsExportLink');
+        let exploreHorizonDays = 30;
+        let cycleExtremeExpanded = false;
+        let cycleExtremeVisibleCount = 0;
 
-        function buildSpecialEvents() {
+        function addIsoDays(dateString, days) {
+            const date = new Date(`${dateString}T00:00:00Z`);
+            date.setUTCDate(date.getUTCDate() + days);
+            return date.toISOString().slice(0, 10);
+        }
+
+        function buildSpecialEvents(horizonDays = exploreHorizonDays) {
             const SERIES = [
                 { key: 'physical',     label: 'Físico',      color: 'var(--physical)'     },
                 { key: 'emotional',    label: 'Emocional',   color: 'var(--emotional)'    },
                 { key: 'intellectual', label: 'Intelectual', color: 'var(--intellectual)' },
             ];
-            const w = data.window;
-            const todayDate = data.window[data.selectedIndex].date;
+            const w = data.exploreWindow;
+            const selectedDate = selectedFocusDate();
+            const lastDate = addIsoDays(selectedDate, horizonDays);
+            const startIndex = w.findIndex((point) => point.date >= selectedDate);
+            const eventsByDate = new Map();
             let totalEvents = 0;
 
             eventsList.innerHTML = '';
 
             SERIES.forEach(({ key, label, color }) => {
-                const chips = [];
-
-                for (let i = 1; i < w.length - 1; i++) {
-                    if (w[i].date < todayDate) continue;
+                for (let i = Math.max(1, startIndex); i < w.length - 1; i++) {
+                    if (w[i].date > lastDate) break;
                     const prev = w[i - 1][key];
                     const cur  = w[i][key];
                     const next = w[i + 1][key];
-                    const isToday = w[i].date === todayDate;
-                    const todayMark = isToday ? ' is-today' : '';
+                    let kind = '';
+                    let value = '';
 
                     if (cur > prev && cur > next && cur > 0.85) {
-                        chips.push(`<span class="event-chip is-peak${todayMark}" title="${w[i].label}">▲ ${w[i].label} <em>+${Math.round(cur * 100)}%</em></span>`);
-                        totalEvents++;
+                        kind = 'Pico';
+                        value = `+${Math.round(cur * 100)}%`;
                     } else if (cur < prev && cur < next && cur < -0.85) {
-                        chips.push(`<span class="event-chip is-valley${todayMark}" title="${w[i].label}">▼ ${w[i].label} <em>${Math.round(cur * 100)}%</em></span>`);
-                        totalEvents++;
+                        kind = 'Valle';
+                        value = `${Math.round(cur * 100)}%`;
                     } else if (prev * cur < 0) {
-                        const dir = cur > 0 ? '↑' : '↓';
-                        chips.push(`<span class="event-chip is-zero${todayMark}" title="${w[i].label}">${dir} ${w[i].label}</span>`);
-                        totalEvents++;
+                        kind = cur > 0 ? 'Cruce de cero hacia positivo' : 'Cruce de cero hacia negativo';
                     }
-                }
 
-                const row = document.createElement('div');
-                row.className = 'event-row';
-                row.innerHTML = `
-                    <span class="event-rhythm-label" style="color:${color}">${label}</span>
-                    <div class="event-chips-row">${chips.join('')}</div>
-                `;
-                eventsList.appendChild(row);
+                    if (!kind) continue;
+                    if (!eventsByDate.has(w[i].date)) {
+                        eventsByDate.set(w[i].date, { label: w[i].label, events: [] });
+                    }
+                    eventsByDate.get(w[i].date).events.push({ label, color, kind, value });
+                    totalEvents++;
+                }
             });
 
-            eventsPill.textContent = `${totalEvents} eventos`;
-        }
-
-        function buildExtremeDays() {
-            const grid = document.getElementById('extremeGrid');
-            const pill = document.getElementById('extremePill');
-            const days = data.extremeDays ?? [];
-
-            pill.textContent = `${days.length} días`;
-            grid.innerHTML = '';
-
-            if (days.length === 0) {
-                grid.innerHTML = '<p style="color:var(--muted);font-size:0.88rem">Sin días extremos en el ciclo restante.</p>';
+            eventsPill.textContent = `${totalEvents} ${totalEvents === 1 ? 'evento' : 'eventos'}`;
+            if (totalEvents === 0) {
+                eventsList.innerHTML = `<p class="event-empty">No hay eventos calculados en los próximos ${horizonDays} días.</p>`;
                 return;
             }
 
-            days.forEach(({ label, avg, physical, emotional, intellectual }) => {
+            [...eventsByDate.entries()].sort(([left], [right]) => left.localeCompare(right)).forEach(([, { label: dateLabel, events }]) => {
+                const group = document.createElement('section');
+                group.className = 'event-date-group';
+                group.innerHTML = `<h3>${dateLabel}</h3><ul>${events.map(({ label, color, kind, value }) => `
+                    <li><span class="event-rhythm-label" style="color:${color}">${label}</span><span>${kind}</span>${value ? `<strong>${value}</strong>` : ''}</li>
+                `).join('')}</ul>`;
+                eventsList.appendChild(group);
+            });
+        }
+
+        function buildExtremeDays() {
+            const selectedDate = selectedFocusDate();
+            const allFutureDays = (data.cycleExtremeDays ?? []).filter((day) => day.date >= selectedDate);
+            const previewEnd = addIsoDays(selectedDate, 30);
+            const previewDays = allFutureDays.filter((day) => day.date <= previewEnd);
+            const visibleDays = cycleExtremeExpanded
+                ? allFutureDays.slice(0, cycleExtremeVisibleCount)
+                : previewDays.slice(0, 5);
+
+            extremePill.textContent = cycleExtremeExpanded
+                ? `${visibleDays.length} de ${allFutureDays.length} del ciclo`
+                : `${Math.min(previewDays.length, 5)} de ${previewDays.length} próximos 30 días`;
+            extremeGrid.innerHTML = '';
+
+            if (visibleDays.length === 0) {
+                const emptyCopy = cycleExtremeExpanded
+                    ? 'No quedan días extremos en el ciclo desde esta fecha.'
+                    : 'No hay días extremos en los próximos 30 días.';
+                extremeGrid.innerHTML = `<p class="event-empty">${emptyCopy}</p>`;
+            }
+
+            visibleDays.forEach(({ label, avg, physical, emotional, intellectual }) => {
                 const isPeak = avg > 0;
                 const cls = isPeak ? 'is-peak' : 'is-valley';
                 const scoreTxt = `${avg > 0 ? '+' : ''}${avg}%`;
@@ -4715,21 +4018,17 @@ $seriesData = [
                         <span class="extreme-item-rhythm" style="color:var(--intellectual)">I ${intellectual > 0 ? '+' : ''}${intellectual}%</span>
                     </div>
                 `;
-                grid.appendChild(el);
+                extremeGrid.appendChild(el);
             });
+
+            cycleExtremeReveal.hidden = cycleExtremeExpanded || allFutureDays.length === 0;
+            cycleExtremeReveal.setAttribute('aria-pressed', String(cycleExtremeExpanded));
+            cycleExtremeMore.hidden = !cycleExtremeExpanded || cycleExtremeVisibleCount >= allFutureDays.length;
+            cycleExtremeLess.hidden = !cycleExtremeExpanded;
         }
 
         function updateForecast(index) {
-            updateDecisionAssistant(index);
-            updateRitual(index);
-            updateStoryMode(index);
             updateCompatibility(index);
-        }
-
-        function updateStoryMode(index) {
-            stopStoryAuto();
-            storyIndex = 0;
-            renderStoryScene(0);
         }
 
         function updateCompatibility(index) {
@@ -4745,11 +4044,11 @@ $seriesData = [
 
             compatScore.textContent = `${Math.round(selected.score * 100)}%`;
             compatNarrative.textContent = selected.score >= 0.82
-                ? 'Lectura alta: hay buena sincronía en los tres ritmos y la ventana se siente fluida.'
+                ? 'Los valores de los tres ciclos coinciden ampliamente en esta fecha; la comparación no evalúa relaciones personales.'
                 : selected.score >= 0.62
-                    ? 'Lectura mixta: hay uno o dos ritmos alineados, pero la compatibilidad depende del día.'
-                    : 'Lectura baja: conviene tratar esta ventana como fase de ajuste, no de empuje.';
-            compatSummaryPill.textContent = `${Math.round(best.score * 100)}% mejor día`;
+                    ? 'Algunos valores coinciden y otros difieren en esta fecha; es solo una comparación del modelo.'
+                    : 'Los valores difieren más en esta fecha; el resultado no describe compatibilidad interpersonal.';
+            compatSummaryPill.textContent = `${Math.round(best.score * 100)}% mayor solapamiento`;
 
             compatStrip.innerHTML = '';
             scored.forEach((point) => {
@@ -4763,7 +4062,7 @@ $seriesData = [
                 compatHeatmap.appendChild(buildCompatibilityHeatmapCell(point, partnerBirth, point.date === best.date, point.date === worst.date));
             });
 
-            compatFooter.textContent = `${best.label} marca el mejor ajuste de esta ventana. ${worst.label} es el punto más delicado, con ${Math.round(worst.score * 100)}% de match.`;
+            compatFooter.textContent = `${best.label} presenta el mayor solapamiento de esta ventana. ${worst.label} presenta el menor (${Math.round(worst.score * 100)}%).`;
         }
 
         function buildCompatibilityCardSvg() {
@@ -4815,9 +4114,9 @@ $seriesData = [
 
   <!-- Header -->
   <text x="84" y="108" style="font:700 14px Arial,sans-serif;fill:${muted};letter-spacing:2px;text-transform:uppercase">BIORHYTHMS / COMPATIBILITY</text>
-  <text x="84" y="175" style="font:700 54px Georgia,serif;fill:${fg}">Modo compatibilidad</text>
+  <text x="84" y="175" style="font:700 54px Georgia,serif;fill:${fg}">Comparación de ciclos</text>
   <text x="84" y="213" style="font:400 22px Georgia,serif;fill:${muted}">${escapeXml(birthInput)} · ${escapeXml(partnerBirth)}</text>
-  <text x="84" y="247" style="font:400 20px Georgia,serif;fill:${muted}">Fecha foco: ${escapeXml(focusInput)}</text>
+  <text x="84" y="247" style="font:400 20px Georgia,serif;fill:${muted}">Fecha foco: ${escapeXml(selectedFocusDate())}</text>
 
   <!-- Divider -->
   <line x1="84" y1="272" x2="580" y2="272" stroke="rgba(255,255,255,0.1)"/>
@@ -4876,124 +4175,14 @@ $seriesData = [
             a.click();
         }
 
-        function buildStoryScenes(index) {
-            const points = [
-                data.window[index],
-                data.window[clamp(index + 2, 0, data.window.length - 1)],
-                data.window[clamp(index + 4, 0, data.window.length - 1)],
-                data.window[clamp(index + 6, 0, data.window.length - 1)],
-            ];
-
-            const peak = points.reduce((carry, point) => {
-                const score = (point.physical + point.emotional + point.intellectual) / 3;
-                return score > carry.score ? { score, point } : carry;
-            }, { score: -Infinity, point: points[0] });
-
-            return [
-                {
-                    kicker: 'Inicio',
-                    title: 'Tu día de foco',
-                    copy: `Arrancas en ${points[0].label}. La mezcla actual sugiere una lectura base de ${formatSignedPercent(points[0].physical)} físico, ${formatSignedPercent(points[0].emotional)} emocional y ${formatSignedPercent(points[0].intellectual)} intelectual.`,
-                    point: points[0],
-                },
-                {
-                    kicker: 'Impulso',
-                    title: 'Lo que se mueve primero',
-                    copy: `En ${points[1].label} aparece el primer giro importante. Si mantienes el ritmo, este tramo puede darte más tracción para tareas cortas o decisiones rápidas.`,
-                    point: points[1],
-                },
-                {
-                    kicker: 'Pico',
-                    title: 'La mejor ventana de la secuencia',
-                    copy: `La escena más fuerte cae en ${peak.point.label}. Aquí la media de los tres ritmos pinta el mejor punto de esta mini-narrativa.`,
-                    point: peak.point,
-                },
-                {
-                    kicker: 'Salida',
-                    title: 'Cómo aterriza la semana',
-                    copy: `Al final, ${points[3].label} marca la salida de la secuencia. Ideal para cerrar, resumir o preparar la siguiente ventana.`,
-                    point: points[3],
-                },
-            ];
-        }
-
-        function renderStoryScene(sceneIndex) {
-            const scenes = buildStoryScenes(selectedIndex);
-            storyIndex = clamp(sceneIndex, 0, scenes.length - 1);
-            const scene = scenes[storyIndex];
-
-            storyStage.classList.toggle('is-cinematic', !reducedMotion);
-            if (!reducedMotion) {
-                storySlide.classList.remove('is-entering');
-                void storySlide.offsetWidth;
-                storySlide.classList.add('is-entering');
-            }
-
-            storyKicker.textContent = scene.kicker;
-            storyTitle.textContent = scene.title;
-            storyCopy.textContent = scene.copy;
-            storyPhysical.textContent = formatSignedPercent(scene.point.physical);
-            storyEmotional.textContent = formatSignedPercent(scene.point.emotional);
-            storyIntellectual.textContent = formatSignedPercent(scene.point.intellectual);
-            storyProgress.textContent = `Escena ${storyIndex + 1} / ${scenes.length}`;
-
-            storyDots.innerHTML = scenes.map((_, i) =>
-                `<div class="story-dot${i === storyIndex ? ' is-active' : ''}"></div>`
-            ).join('');
-
-            storyProgressFill.style.transition = 'none';
-            storyProgressFill.style.transform = 'scaleX(0)';
-            if (!reducedMotion) void storyProgressFill.offsetWidth;
-            if (storyTimer) {
-                storyProgressFill.style.transition = `transform ${STORY_INTERVAL}ms linear`;
-                storyProgressFill.style.transform = 'scaleX(1)';
-            }
-
-            window.clearTimeout(renderStoryScene._timer);
-            renderStoryScene._timer = window.setTimeout(() => {
-                storyStage.classList.remove('is-cinematic');
-            }, 400);
-        }
-
-        function stopStoryAuto() {
-            if (storyTimer) {
-                window.clearInterval(storyTimer);
-                storyTimer = null;
-            }
-            storyAutoBtn.textContent = 'Reanudar reproducción';
-            storyProgressFill.style.transition = 'none';
-            storyProgressFill.style.transform = 'scaleX(0)';
-        }
-
-        function startStoryAuto() {
-            if (storyTimer) window.clearInterval(storyTimer);
-            storyAutoBtn.textContent = 'Pausar reproducción';
-            storyProgressFill.style.transition = `transform ${STORY_INTERVAL}ms linear`;
-            storyProgressFill.style.transform = 'scaleX(1)';
-            storyTimer = window.setInterval(() => {
-                const scenes = buildStoryScenes(selectedIndex);
-                storyIndex = (storyIndex + 1) % scenes.length;
-                renderStoryScene(storyIndex);
-            }, STORY_INTERVAL);
-        }
-
-        function toggleStoryAuto() {
-            if (storyTimer) {
-                stopStoryAuto();
-            } else {
-                startStoryAuto();
-                renderStoryScene(storyIndex);
-            }
-        }
-
         function buildShareSvg(point) {
             const width = 1200;
             const height = 630;
             const headline = point.physical >= point.emotional && point.physical >= point.intellectual
-                ? 'Pico físico'
+                ? 'Lectura del día'
                 : point.emotional >= point.physical && point.emotional >= point.intellectual
-                    ? 'Pico emocional'
-                    : 'Pico intelectual';
+                    ? 'Lectura del día'
+                    : 'Lectura del día';
 
             return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <defs>
@@ -5024,7 +4213,7 @@ $seriesData = [
   <rect x="44" y="44" width="1112" height="542" rx="32" fill="rgba(8,14,27,0.72)" stroke="rgba(255,255,255,0.12)"/>
   <text x="84" y="120" class="pill">BIORHYTHMS / SHARE CARD</text>
   <text x="84" y="194" class="title">${headline}</text>
-  <text x="84" y="244" class="sub">${point.label} · nacimiento ${birthInput} · foco ${focusInput}</text>
+  <text x="84" y="244" class="sub">${point.label} · fecha seleccionada ${selectedFocusDate()}</text>
   <text x="84" y="300" class="small">Físico</text>
   <text x="84" y="346" class="value">${(point.physical * 100).toFixed(1)}%</text>
   <text x="404" y="300" class="small">Emocional</text>
@@ -5114,10 +4303,10 @@ $seriesData = [
             ctx.fillText(theme === 'light' ? 'TEMA CLARO' : 'TEMA OSCURO', 908, 109);
 
             const mainHeadline = point.physical >= point.emotional && point.physical >= point.intellectual
-                ? 'Pico físico'
+                ? 'Lectura del día'
                 : point.emotional >= point.physical && point.emotional >= point.intellectual
-                    ? 'Pico emocional'
-                    : 'Pico intelectual';
+                    ? 'Lectura del día'
+                    : 'Lectura del día';
 
             ctx.fillStyle = '#ecf2ff';
             ctx.font = '700 60px Georgia, serif';
@@ -5125,7 +4314,7 @@ $seriesData = [
             ctx.fillStyle = '#9bb0d0';
             ctx.font = '400 24px Georgia, serif';
             ctx.fillText(`${mainHeadline} · ${point.label}`, 84, 230);
-            ctx.fillText(`Nacimiento ${birthInput} · foco ${focusInput}`, 84, 264);
+            ctx.fillText(`Fecha seleccionada ${selectedFocusDate()}`, 84, 264);
 
             const metricCards = [
                 { label: 'Físico', value: formatSignedPercent(point.physical), color: '#ff7b54' },
@@ -5239,11 +4428,11 @@ $seriesData = [
             await navigator.clipboard.writeText(summary);
         }
 
-        function setZoom(days) {
+        function setZoom(days, centerIndex = selectedIndex) {
             const total = data.window.length;
             const clampedDays = Math.min(days, total);
             const half = Math.floor(clampedDays / 2);
-            const center = data.selectedIndex;
+            const center = centerIndex;
             visibleStartIndex = Math.max(0, Math.min(center - half, total - clampedDays));
             const end = Math.min(visibleStartIndex + clampedDays, total);
             visibleWindow = data.window.slice(visibleStartIndex, end);
@@ -5274,15 +4463,43 @@ $seriesData = [
             chartResizeFrame = requestAnimationFrame(buildGrid);
         }, { passive: true });
 
+        exploreHorizonButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                exploreHorizonDays = Number(button.dataset.exploreHorizon);
+                exploreHorizonButtons.forEach((option) => {
+                    option.setAttribute('aria-pressed', String(option === button));
+                });
+                buildSpecialEvents(exploreHorizonDays);
+            });
+        });
+
+        cycleExtremeReveal.addEventListener('click', () => {
+            const allFutureDays = (data.cycleExtremeDays ?? []).filter((day) => day.date >= selectedFocusDate());
+            cycleExtremeExpanded = true;
+            cycleExtremeVisibleCount = Math.min(10, allFutureDays.length);
+            buildExtremeDays();
+        });
+        cycleExtremeMore.addEventListener('click', () => {
+            cycleExtremeVisibleCount += 10;
+            buildExtremeDays();
+        });
+        cycleExtremeLess.addEventListener('click', () => {
+            cycleExtremeExpanded = false;
+            cycleExtremeVisibleCount = 0;
+            buildExtremeDays();
+        });
+
         setZoom(91);
         buildSpecialEvents();
         buildExtremeDays();
         updateWidgetChart();
         applyTheme(theme);
-        updateWidgetEmbedSnippet();
         updateSelected(Number(slider.value));
         animateEntrance();
         syncCompatibilityUrl();
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!isEmbedView && !document.getElementById('herramientas').hidden) refreshIntegrationPreviews();
+        });
 
         let sliderFrame = 0;
         let pendingSliderIndex = Number(slider.value);
@@ -5291,13 +4508,46 @@ $seriesData = [
             if (sliderFrame) return;
             sliderFrame = window.requestAnimationFrame(() => {
                 sliderFrame = 0;
-                updateSelected(pendingSliderIndex);
+                selectReadingDate(pendingSliderIndex);
             });
+        });
+        slider.addEventListener('change', () => refreshIntegrationPreviews());
+
+        previousReadingDay.addEventListener('click', () => selectReadingDate(selectedIndex - 1, { refreshPreviews: true }));
+        nextReadingDay.addEventListener('click', () => selectReadingDate(selectedIndex + 1, { refreshPreviews: true }));
+        todayReadingDay.addEventListener('click', () => {
+            const today = new Date();
+            const localToday = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+            navigateToReadingDate(localToday);
+        });
+
+        focusDateForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (!focusDateInput.reportValidity()) return;
+            const url = syncReadingUrl(focusDateInput.value);
+            url.hash = 'lectura';
+            window.history.replaceState(window.history.state, '', url);
+            window.location.reload();
+        });
+
+        profileBirthForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (!profileBirthInput.reportValidity()) return;
+            const url = syncReadingUrl(selectedFocusDate());
+            url.searchParams.set('birth', profileBirthInput.value);
+            url.hash = 'herramientas';
+            window.history.replaceState(window.history.state, '', url);
+            window.location.reload();
+        });
+
+        document.querySelector('[data-workspace-link="herramientas"]')?.addEventListener('click', refreshIntegrationPreviews);
+
+        widgetDetails?.addEventListener('toggle', () => {
+            if (widgetDetails.open) updateWidgetEmbedSnippet();
         });
 
         jumpToTodayBtn.addEventListener('click', () => {
-            slider.value = String(data.selectedIndex);
-            updateSelected(data.selectedIndex);
+            selectReadingDate(data.selectedIndex, { refreshPreviews: true });
         });
 
         exportPngBtn.addEventListener('click', async () => {
@@ -5313,7 +4563,9 @@ $seriesData = [
         });
 
         copyLinkBtn.addEventListener('click', async () => {
-            await navigator.clipboard.writeText(window.location.href);
+            const shareUrl = new URL(window.location.href);
+            shareUrl.hash = 'lectura';
+            await navigator.clipboard.writeText(shareUrl.toString());
             copyLinkBtn.textContent = 'Enlace copiado';
             setTimeout(() => {
                 copyLinkBtn.textContent = 'Copiar enlace';
@@ -5336,28 +4588,21 @@ $seriesData = [
             }, 1600);
         });
 
-        copyRitualBtn.addEventListener('click', async () => {
-            await navigator.clipboard.writeText(ritualText());
-            copyRitualBtn.textContent = 'Ritual copiado';
-            setTimeout(() => {
-                copyRitualBtn.textContent = 'Copiar ritual';
-            }, 1600);
-        });
-
         themeToggleBtn.addEventListener('click', () => {
             applyTheme(theme === 'light' ? 'dark' : 'light');
+            updateWidgetEmbedSnippet();
         });
 
         partnerBirthInput.addEventListener('input', () => {
             updateCompatibility(selectedIndex);
             syncCompatibilityUrl();
+            refreshIntegrationPreviews();
         });
 
         exportCompatBtn.addEventListener('click', async () => {
             await exportCompatibilityCardAsPng();
         });
 
-        storyAutoBtn.addEventListener('click', toggleStoryAuto);
     </script>
     <script src="assets/diary.js"></script>
     <script src="assets/chrono.js"></script>
@@ -5655,5 +4900,6 @@ $seriesData = [
             }
         })();
     </script>
+<?php endif; ?>
 </body>
 </html>

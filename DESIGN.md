@@ -135,9 +135,9 @@ La paleta clara combina papel marfil y tinta marrón carbón; el modo oscuro cam
 
 ## Layout
 
-El contenedor de escritorio mide como máximo `1388px` y usa `calc(100% - 64px)`, centrado. La lectura principal combina un raíl de fechas lateral (`0.16fr`, mínimo `120px`) y una hoja flexible, con `24px` entre ambos. La hoja usa `38px` de padding vertical y padding horizontal fluido (`clamp(24px, 4.8vw, 72px)`).
+La aplicación se organiza en cuatro destinos de navegación: **Lectura**, **Explorar**, **Diario** y **Herramientas**. Cada destino tiene un encabezado identificable y se muestra como espacio independiente; los enlaces conservan fragmentos en la URL para restaurar la selección y enlazar directamente a módulos secundarios.
 
-A `820px`, el raíl pasa debajo de la lectura como tres columnas, la hoja ocupa primero el ancho y los controles y herramientas se apilan. A `560px`, el contenedor usa `calc(100% - 24px)`, la hoja principal pasa a `20px 16px`, y los paneles secundarios reducen el padding a `15px 13px`. El gráfico conserva el ancho disponible; sus fechas muestran hasta cinco marcas en pantallas de hasta `700px` para evitar amontonamiento.
+En escritorio, la navegación principal se mantiene junto al encabezado. A `820px` o menos, pasa a una barra fija inferior que respeta el `safe-area` del dispositivo y deja espacio al contenido. A `560px`, los formularios del diario se distribuyen en dos columnas y la tabla se desplaza dentro de su propio contenedor; el documento no debe adquirir scroll horizontal. El gráfico conserva el límite de cinco marcas temporales hasta `700px`.
 
 ## Elevation & Depth
 
@@ -180,10 +180,18 @@ La geometría es contenida y casi rectangular: hoja y tarjetas usan `10px`; cont
 ### Navigation
 - **Style:** la navegación principal es texto sans serif de `0.95rem`, con objetivos de al menos `44px` de alto y separación inferior de `2px`.
 - **State:** activo y hover usan tinta y subrayado terracota; inactivo usa texto secundario.
-- **Mobile:** bajo `820px`, las rutas principales pasan a una segunda fila alineada al inicio; el tema permanece en la fila superior.
+- **Mobile:** hasta `820px`, presenta las cuatro rutas en una barra fija inferior con áreas táctiles de al menos `48px`; incluye `safe-area` y espacio inferior equivalente en el contenido.
+- **Navigation behavior:** refleja el destino activo con `aria-current="page"`, actualiza el fragmento del URL y enfoca/desplaza el encabezado del destino. Los fragmentos heredados siguen llevando al espacio que contiene su módulo.
+
+### Workspaces
+- **Lectura:** fecha elegida, tres valores reales del modelo, gráfico y una pregunta de reflexión neutral.
+- **Explorar:** eventos en horizonte de 7/30/90 días, calendario mensual y consulta progresiva de extremos del ciclo.
+- **Diario:** registro y análisis de autoobservación guardados localmente en el navegador.
+- **Herramientas:** comparación matemática de perfiles, cronotipo, contexto simbólico, preferencias, compartir y opciones de integración; los detalles se agrupan en disclosures.
+- Mantén el lenguaje neutral: los ciclos no determinan compatibilidad, decisiones ni recomendaciones.
 
 ### Daily Reading
-La fecha aparece en Georgia con cifras tabulares; los tres valores se presentan en una fila de tres columnas con separadores verticales y etiquetas con nombre, ciclo y acento de color correspondiente. Mantén visible que son “salidas matemáticas” y no mediciones. El gráfico debe conservar leyenda textual y etiquetas del eje legibles.
+La fecha aparece en Georgia con cifras tabulares; los tres valores se presentan en una fila de tres columnas con separadores verticales y etiquetas con nombre, ciclo y acento de color correspondiente. Mantén visible que son “salidas matemáticas” y no mediciones. El gráfico debe conservar leyenda textual y etiquetas del eje legibles. La navegación a otro espacio enfoca su encabezado y desplaza el nuevo contenido a la vista; respeta `prefers-reduced-motion`.
 
 ## Do's and Don'ts
 

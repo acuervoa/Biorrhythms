@@ -8,7 +8,7 @@
  */
 'use strict';
 
-const VERSION = 'v1.6.0';
+const VERSION = 'v1.7.0';
 const STATIC_CACHE = 'biorrhythms-static-' + VERSION;
 const PAGE_CACHE = 'biorrhythms-pages-' + VERSION;
 const MAX_PAGES = 8;
@@ -16,6 +16,8 @@ const MAX_PAGES = 8;
 const PRECACHE = [
     'manifest.webmanifest',
     'assets/profile.js',
+    'assets/workspaces.js',
+    'assets/workspaces.css',
     'assets/diary.js',
     'assets/chrono.js',
     'assets/notify.js',

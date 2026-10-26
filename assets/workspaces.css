@@ -1,0 +1,295 @@
+[data-workspace-panel][hidden] {
+    display: none !important;
+}
+
+.shell > [data-workspace-panel] {
+    min-width: 0;
+}
+
+.workspace-heading {
+    margin: 0 0 8px;
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    line-height: 1.2;
+    scroll-margin-top: 12px;
+}
+
+.primary-nav {
+    display: flex;
+    align-items: center;
+    justify-self: center;
+    gap: clamp(12px, 2.5vw, 34px);
+}
+
+.primary-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted);
+    font-size: 0.95rem;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+}
+
+.primary-nav a[aria-current="page"],
+.primary-nav a:hover {
+    color: var(--text);
+    border-color: var(--physical);
+}
+
+.primary-nav a:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+.reading-date-stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reading-date-stepper button {
+    min-width: 44px;
+    min-height: 42px;
+}
+
+.explore-horizon {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.explore-horizon button,
+.extreme-actions button {
+    min-height: 40px;
+    padding: 7px 12px;
+    color: var(--text);
+    background: var(--paper);
+    border: 1px solid var(--stroke);
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+.explore-horizon button[aria-pressed="true"] {
+    color: var(--paper);
+    background: var(--text);
+    border-color: var(--text);
+}
+
+.event-date-group {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--stroke);
+}
+
+.event-date-group h3 {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+}
+
+.event-date-group ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.event-date-group li {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.5fr) minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.event-date-group li strong {
+    font-variant-numeric: tabular-nums;
+}
+
+.event-empty {
+    margin: 0;
+    color: var(--muted);
+}
+
+.extreme-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.tools-group-heading {
+    margin: 22px 0 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--stroke);
+    font-family: var(--serif, Georgia, serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.tools-disclosure {
+    padding: 14px 16px;
+    border: 1px solid var(--stroke);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.tools-disclosure > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.integration-disclosure {
+    margin-top: 12px;
+}
+
+.widget-details > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.widget-details[open] > summary {
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+.embed-view .widget-details > summary {
+    display: none;
+}
+
+.diary-table-scroll {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+}
+
+.diary-table-scroll:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+.diary-table-hint {
+    display: none;
+}
+
+.first-visit .shell > :not(.site-header):not(#lectura) {
+    display: none !important;
+}
+
+.first-visit .shell > #lectura {
+    display: block !important;
+}
+
+.first-visit #lectura > :not(.welcome-sheet):not(.input-notice[role="alert"]) {
+    display: none !important;
+}
+
+.embed-view .shell > :not(#herramientas) {
+    display: none !important;
+}
+
+.embed-view .shell > #herramientas {
+    display: block !important;
+}
+
+.embed-view #herramientas > :not(#widget) {
+    display: none !important;
+}
+
+.embed-view .shell {
+    display: block;
+}
+
+@media (max-width: 820px) {
+    .site-header {
+        grid-template-columns: auto 1fr auto;
+    }
+
+    .primary-nav {
+        position: fixed;
+        z-index: 100;
+        inset: auto 0 0;
+        justify-self: stretch;
+        width: auto;
+        justify-content: space-around;
+        gap: 0;
+        padding: 6px max(10px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom));
+        background: var(--paper);
+        border-top: 1px solid var(--stroke);
+    }
+
+    .primary-nav a {
+        min-width: 0;
+        flex: 0 1 auto;
+        min-height: 48px;
+        justify-content: center;
+        padding: 0 3px;
+        white-space: nowrap;
+        font-size: 0.8rem;
+    }
+
+    body:not(.embed-view):not(.first-visit) {
+        padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    }
+}
+
+@media (max-width: 560px) {
+    .primary-nav {
+        gap: 0;
+    }
+
+    .diary-form#diaryForm {
+        width: 100%;
+        box-sizing: border-box;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .diary-form#diaryForm label:first-child,
+    .diary-form#diaryForm button {
+        grid-column: 1 / -1;
+    }
+
+    .diary-form#diaryForm select,
+    .diary-form#diaryForm input[type="date"] {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .diary-table {
+        min-width: 580px;
+    }
+
+    .diary-table-hint {
+        display: block;
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.72rem;
+    }
+
+    .tools-group-heading {
+        margin-top: 16px;
+        font-size: 1.1rem;
+    }
+
+    .tools-disclosure {
+        padding: 10px 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .primary-nav,
+    [data-workspace-panel] {
+        scroll-behavior: auto;
+        transition: none !important;
+    }
+}

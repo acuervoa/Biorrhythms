@@ -2,6 +2,17 @@
 
 Notable changes to Biorrhythms are recorded here.
 
+## [1.7.0] — 2026-10-26
+
+### Changed
+
+- Reorganized the application into four destinations: Lectura, Explorar, Diario and Herramientas.
+- Moved calendar, event horizons and cycle extremes into Explorar; grouped comparison, chronotype, symbolic context, sharing and integrations in Herramientas.
+- Replaced long simultaneous tool lists with focused disclosures and a bounded cycle-extreme preview.
+- Added responsive bottom navigation on compact screens, date stepping, destination-aware deep links, and focus/scroll management when changing destinations.
+- Preserved API responses, calculations, query parameters, embed mode, browser-local data and export behavior.
+- Updated the product specification, visual system, implementation plan and Biorrhythms agent skill.
+
 ## [1.6.0] — 2026-10-26
 
 ### Changed
