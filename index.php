@@ -159,6 +159,15 @@ $monthLink   = static fn (string $focus): string => '?' . http_build_query(
     '&',
     PHP_QUERY_RFC3986,
 );
+$readingWeekdays = [1 => 'lunes', 2 => 'martes', 3 => 'miércoles', 4 => 'jueves', 5 => 'viernes', 6 => 'sábado', 7 => 'domingo'];
+$readingWeekdaysShort = [1 => 'lun', 2 => 'mar', 3 => 'mié', 4 => 'jue', 5 => 'vie', 6 => 'sáb', 7 => 'dom'];
+$readingMonths = [1 => 'ene', 2 => 'feb', 3 => 'mar', 4 => 'abr', 5 => 'may', 6 => 'jun', 7 => 'jul', 8 => 'ago', 9 => 'sep', 10 => 'oct', 11 => 'nov', 12 => 'dic'];
+$readingWeekday = $readingWeekdays[(int) $focusDate->format('N')];
+$readingDateLabel = sprintf('%d %s %s', $focusDate->format('j'), $readingMonths[(int) $focusDate->format('n')], $focusDate->format('Y'));
+$readingDayOfYear = (int) $focusDate->format('z') + 1;
+$readingYearLength = $focusDate->format('L') === '1' ? 366 : 365;
+$previousDayDate = $focusDate->modify('-1 day');
+$nextDayDate = $focusDate->modify('+1 day');
 $criticalAhead = CriticalDays::find($birthDate, $focusDate, $focusDate->modify('+1 day'));
 $icsLink = 'calendar.php?' . http_build_query(['birth' => $birthInput, 'from' => $focusInput, 'days' => 90], '', '&', PHP_QUERY_RFC3986);
 
@@ -2676,7 +2685,10 @@ $seriesData = [
             }
 
             /* Compat */
-            .compat-score { font-size: 2.2rem; }
+            .compat-score { font-size: 1rem; gap: 10px; padding: 14px; }
+            .compat-score small { font-size: 0.72rem; }
+            .compat-score strong { font-size: clamp(2.2rem, 10vw, 3rem); }
+            .compat-score p { font-size: 0.95rem; line-height: 1.5; overflow-wrap: anywhere; }
 
             .compat-day {
                 flex: 0 0 110px;
@@ -2720,70 +2732,411 @@ $seriesData = [
                 font-size: 1.3rem;
             }
         }
+
+        /* Bitácora de observación */
+        :root {
+            color-scheme: light;
+            --bg: #f8f7ee;
+            --paper: #f8f7ee;
+            --paper-muted: #f4f0e7;
+            --surface: #f8f5ed;
+            --stroke: #d3cbc1;
+            --text: #29231f;
+            --muted: #716960;
+            --physical: #b84d39;
+            --emotional: #24776c;
+            --intellectual: #4168a0;
+            --accent: #9f4633;
+            --focus-ring: #315d96;
+            --radius: 10px;
+        }
+
+        body {
+            color: var(--text);
+            background: var(--bg);
+            font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+            line-height: 1.5;
+            font-size: 16px;
+        }
+
+        body[data-theme="light"] {
+            color-scheme: light;
+            --bg: #f8f7ee;
+            --paper: #f8f7ee;
+            --paper-muted: #f4f0e7;
+            --surface: #f8f5ed;
+            --stroke: #d3cbc1;
+            --text: #29231f;
+            --muted: #716960;
+            --physical: #b84d39;
+            --emotional: #24776c;
+            --intellectual: #4168a0;
+            --accent: #9f4633;
+            --focus-ring: #315d96;
+            background: var(--bg);
+        }
+
+        body[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #202522;
+            --paper: #292f2b;
+            --paper-muted: #303733;
+            --surface: #2a302c;
+            --stroke: #505a52;
+            --text: #f2eee4;
+            --muted: #c0c1b8;
+            --physical: #e27a61;
+            --emotional: #69b8a5;
+            --intellectual: #86a9dc;
+            --accent: #efaa85;
+            --focus-ring: #a8c5f2;
+            background: var(--bg);
+        }
+
+        body.embed-view {
+            overflow: hidden;
+            background: transparent;
+        }
+
+        html { scroll-behavior: smooth; scrollbar-color: var(--stroke) var(--bg); }
+        ::selection { color: var(--paper); background: var(--text); }
+        a { color: inherit; text-decoration-color: color-mix(in srgb, currentColor 42%, transparent); text-underline-offset: 0.22em; }
+        a:hover { text-decoration-color: currentColor; }
+        :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+        p { max-width: 72ch; }
+        h1, h2, h3, .wordmark, .stat strong, .date-rail-item strong {
+            font-family: Georgia, "Times New Roman", serif;
+            text-wrap: balance;
+        }
+
+        .shell {
+            width: min(1388px, calc(100% - 64px));
+            margin: 18px auto 64px;
+            padding: 0;
+            display: grid;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        .site-header {
+            min-height: 64px;
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: 36px;
+            border-bottom: 1px solid var(--stroke);
+        }
+
+        .wordmark {
+            width: fit-content;
+            color: var(--text);
+            font-size: clamp(1.65rem, 2.7vw, 2.75rem);
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.035em;
+            text-decoration: none;
+        }
+
+        .primary-nav { display: flex; align-items: center; justify-self: end; gap: 30px; }
+        .primary-nav a {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            color: var(--muted);
+            font-size: 0.95rem;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+        }
+        .primary-nav a[aria-current="page"], .primary-nav a:hover { color: var(--text); border-color: var(--physical); }
+        .theme-toggle { justify-self: end; margin: 0; padding: 8px 12px; }
+
+        body.first-visit .shell > :not(.site-header):not(.welcome-sheet):not(.input-notice[role="alert"]) { display: none !important; }
+        body.first-visit .primary-nav { visibility: hidden; }
+
+        .welcome-sheet {
+            width: min(680px, 100%);
+            margin: clamp(32px, 9vh, 104px) auto 0;
+            padding: clamp(26px, 5vw, 52px);
+            background: var(--paper);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            box-shadow: 0 14px 36px rgba(47, 39, 31, 0.08);
+        }
+        .welcome-sheet .section-label { margin: 0 0 8px; color: var(--physical); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+        .welcome-sheet h1 { margin: 0; font-size: clamp(2.4rem, 6vw, 4.2rem); line-height: 1.02; letter-spacing: -0.035em; }
+        .welcome-sheet > p:not(.section-label) { margin: 16px 0 28px; color: var(--muted); }
+        .welcome-form { display: grid; gap: 8px; }
+        .welcome-form > label, .date-control-form label { color: var(--text); font-size: 0.9rem; font-weight: 600; }
+        .welcome-form-row { display: flex; gap: 10px; align-items: stretch; }
+        .welcome-form-row .bar-submit { min-width: 136px; white-space: nowrap; }
+        .welcome-form small { color: var(--muted); }
+
+        .journal-layout { display: grid; grid-template-columns: minmax(120px, 0.16fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+        .date-rail {
+            display: grid;
+            align-content: start;
+            gap: 10px;
+            padding-top: 40px;
+            padding-right: 16px;
+            border-right: 1px solid var(--stroke);
+        }
+        .date-rail-item {
+            min-width: 0;
+            min-height: 124px;
+            display: grid;
+            align-content: center;
+            justify-items: center;
+            gap: 3px;
+            padding: 12px 8px;
+            color: var(--muted);
+            text-align: center;
+            text-decoration: none;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+        }
+        .date-rail-item:hover { background: var(--paper-muted); }
+        .date-rail-item.is-selected { color: var(--physical); background: color-mix(in srgb, var(--physical) 8%, var(--paper)); border-color: color-mix(in srgb, var(--physical) 24%, var(--stroke)); }
+        #dateRailPrevious { min-height: 154px; }
+        #dateRailCurrent { min-height: 163px; }
+        #dateRailNext { min-height: 124px; }
+        .date-rail-item strong { font-size: 2.25rem; font-weight: 400; line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
+        .date-rail-item span, .date-rail-item small { font-size: 0.76rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .date-rail-item small { font-weight: 700; }
+
+        body[data-theme="light"] .card,
+        body[data-theme="dark"] .card,
+        body:not([data-theme]) .card {
+            color: var(--text);
+            background: var(--paper);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            box-shadow: 0 12px 28px rgba(47, 39, 31, 0.07);
+        }
+        body[data-theme="light"] article.hero-main.card {
+            background-color: var(--paper);
+            background-image: linear-gradient(rgba(248, 247, 238, 0.58), rgba(248, 247, 238, 0.58)), url("assets/paper-texture.webp");
+            background-size: 512px 512px;
+            background-repeat: repeat;
+        }
+        .hero { margin: 4px 0 0; }
+        .hero-main { min-width: 0; padding: 38px clamp(24px, 4.8vw, 72px); overflow: visible; }
+        .reading-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--stroke); }
+        .reading-weekday { margin: 0 0 4px; color: var(--muted); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.17em; text-transform: uppercase; }
+        .reading-heading h1 { margin: 0; font-size: clamp(3.4rem, 6vw, 5.2rem); font-weight: 400; line-height: 0.98; letter-spacing: -0.04em; font-variant-numeric: lining-nums tabular-nums; }
+        .calendar-day-stamp { margin: 8px 0 0; color: var(--muted); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; text-align: right; text-transform: uppercase; white-space: nowrap; }
+        .model-values-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin: 26px 0 4px; }
+        .model-values-heading h2 { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+        .model-values-heading p { margin: 0; color: var(--muted); font-size: 0.88rem; text-align: right; }
+        .hero-stats-inline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 12px 0 0; }
+        .stat { min-width: 0; padding: 10px 18px 8px; text-align: center; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+        .stat + .stat { border-left: 1px solid var(--stroke) !important; }
+        .stat small { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 0; color: var(--text); font-size: 0.86rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+        .stat small::before { width: 11px; height: 11px; flex: 0 0 11px; content: ""; border-radius: 50%; background: currentColor; }
+        .stat-physical small, .stat-physical strong { color: var(--physical); }
+        .stat-emotional small, .stat-emotional strong { color: var(--emotional); }
+        .stat-intellectual small, .stat-intellectual strong { color: var(--intellectual); }
+        .stat strong { display: block; margin-top: 6px; font-size: clamp(3rem, 4.8vw, 4.8rem); font-weight: 400; line-height: 1; letter-spacing: -0.035em; font-variant-numeric: lining-nums tabular-nums; }
+        .stat span { display: block; margin-top: 6px; color: var(--muted); font-size: 0.78rem; }
+
+        .controls-bar {
+            display: grid;
+            grid-template-columns: minmax(230px, 0.75fr) minmax(320px, 1.25fr);
+            align-items: center;
+            gap: 24px;
+            margin: 8px 0 0;
+            padding: 10px 0;
+            background: transparent !important;
+            border: 0;
+            border-top: 1px solid var(--stroke);
+            border-radius: 0;
+            box-shadow: none !important;
+        }
+        .date-control-form { display: flex; align-items: end; gap: 10px; min-width: 0; }
+        .controls-bar label { background: transparent !important; border: 0 !important; }
+        .date-control-form label { min-width: 0; flex: 1; }
+        .date-control-form .bar-submit { flex: 0 0 auto; margin: 0; }
+        .controls-bar .bar-slider { flex: none; display: grid; grid-auto-rows: min-content; align-self: center; gap: 2px; min-width: 0; min-height: 0; }
+        .bar-slider label { color: var(--text); font-size: 0.84rem; font-weight: 600; }
+        .bar-slider input[type="range"] { min-height: 22px; accent-color: var(--physical); }
+        .footer-note { color: var(--muted); font-size: 0.8rem; }
+        .disclaimer { max-width: 86ch; margin: 18px 0 0; padding-top: 12px; border-top: 1px solid var(--stroke); color: var(--muted); font-size: 0.78rem; }
+
+        .panel { padding: 22px 26px; }
+        .hero-main .chart-wrap { margin: 0; padding: 8px 0 8px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+        .hero-main .chart-wrap .panel-head h2 { margin: 0; font-size: 1rem; letter-spacing: 0.15em; text-transform: uppercase; }
+        .panel-head { align-items: center; margin-bottom: 10px; }
+        .panel-head h2, .events-head h2, .extreme-head h2, .compat-head h2, .decision-head h2, .ritual-head h2 { font-size: 1.35rem; }
+        .panel-head p, .events-head p, .extreme-head p { color: var(--muted); font-size: 0.88rem; }
+        .button-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .zoom-btns { flex-wrap: wrap; gap: 4px; }
+        .zoom-btn { min-height: 36px; padding: 6px 9px; border-color: var(--stroke); background: transparent; color: var(--muted); font-size: 0.75rem; letter-spacing: 0; }
+        .zoom-btn.is-active { color: var(--text); background: color-mix(in srgb, var(--physical) 12%, var(--paper)); border-color: color-mix(in srgb, var(--physical) 42%, var(--stroke)); }
+        .chart { width: 100%; height: auto; max-height: 360px; }
+        .chart > rect { fill: none !important; }
+        .grid-line { stroke: color-mix(in srgb, var(--stroke) 80%, transparent); }
+        .zero-line { stroke: color-mix(in srgb, var(--text) 46%, transparent); stroke-dasharray: 0; }
+        .marker { stroke: var(--muted); stroke-dasharray: 3 5; }
+        .marker-label { fill: var(--muted); font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif; font-size: 11px; }
+        .axis-label { fill: var(--muted); font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif; font-size: 12px; }
+        .path { stroke-width: 3; }
+        .legend { justify-content: center; margin-top: 4px; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-size: 1rem; }
+        .legend .dot { width: 10px; height: 10px; }
+        .chart-text-alternative { max-width: 72ch; margin: 14px auto 0; color: var(--muted); font-size: 0.82rem; }
+
+        .reflection-note { padding: 20px 0 16px; border-bottom: 1px solid var(--stroke); }
+        .reflection-note h2 { margin: 0 0 5px; color: var(--muted); font-family: Georgia, "Times New Roman", serif; font-size: 1rem; font-weight: 400; letter-spacing: 0.32em; text-transform: uppercase; }
+        .reflection-note p { margin: 0; font-size: clamp(1.05rem, 1.6vw, 1.35rem); }
+        .tool-index { display: grid; grid-template-columns: minmax(200px, 0.55fr) 1.45fr; gap: 24px; padding: 22px 0 8px; scroll-margin-top: 20px; }
+        .tool-index h2 { margin: 0; font-size: 1.45rem; }
+        .tool-index p { margin: 4px 0 0; color: var(--muted); font-size: 0.88rem; }
+        .tool-links { display: flex; flex-wrap: wrap; gap: 7px; }
+        .tool-links a { min-height: 38px; display: inline-flex; align-items: center; padding: 6px 10px; border: 1px solid var(--stroke); border-radius: 999px; color: var(--text); background: var(--paper); font-size: 0.8rem; text-decoration: none; }
+        .tool-links a:hover { border-color: var(--physical); }
+        .forecast-card, .events-card, .extreme-card, .compat-card, .decision-card, .ritual-card, #context, #monthCalendar, #diary, #chrono, #prefs, .story-card, .share-card, .widget-card, .api-card { padding: 22px; scroll-margin-top: 18px; }
+        .forecast-card .hero-forecast-chips { gap: 8px; }
+        .forecast-card .hero-forecast-chip { border-color: var(--stroke); background: var(--paper-muted); color: var(--muted); }
+        .forecast-card .hero-forecast-chip strong { color: var(--text); }
+        .status-pill { color: var(--text); border-color: var(--stroke); background: var(--paper-muted); }
+        .event-row, .extreme-item, .context-item, .decision-panel, .decision-calendar, .ritual-panel, .api-panel, .widget-panel, .story-stat, .share-metric, .compat-day, .compat-heatmap-cell, .forecast-day, .widget-mini-stat, .widget-chart-shell {
+            color: var(--text);
+            border-color: var(--stroke);
+            background: var(--paper-muted);
+            box-shadow: none;
+        }
+        .input-notice[role="alert"] { border-color: var(--physical); color: var(--text); background: var(--paper); }
+
+        button, .secondary-btn, .api-preview-toggle, .month-nav a, .diary-actions .secondary-btn {
+            min-height: 40px;
+            padding: 8px 12px;
+            color: var(--text);
+            border: 1px solid var(--stroke);
+            border-radius: 7px;
+            background: var(--paper);
+            box-shadow: none;
+            font: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover, .secondary-btn:hover, .api-preview-toggle:hover, .month-nav a:hover { background: var(--paper-muted); border-color: var(--muted); }
+        .bar-submit, .welcome-form .bar-submit { color: var(--paper); background: var(--text); border-color: var(--text); }
+        .bar-submit:hover, .welcome-form .bar-submit:hover { color: var(--paper); background: #403830; border-color: #403830; }
+        input[type="date"], input[type="time"], select, textarea {
+            min-height: 42px;
+            padding: 8px 10px;
+            color: var(--text);
+            border: 1px solid var(--stroke);
+            border-radius: 6px;
+            background: var(--paper);
+            font: inherit;
+        }
+        .api-snippet textarea, .widget-code textarea, .api-preview { color: var(--text); background: var(--paper-muted); border-color: var(--stroke); }
+        .compat-strip, .compat-heatmap-grid, .month-calendar-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+
+        @media (max-width: 820px) {
+            .shell { width: min(100% - 40px, 720px); }
+            .site-header { grid-template-columns: 1fr auto; gap: 10px; padding-bottom: 8px; }
+            .primary-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 22px; }
+            .theme-toggle { grid-column: 2; grid-row: 1; }
+            .journal-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+            .hero-main { grid-row: 1; }
+            .date-rail { grid-row: 2; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px 0 0; border: 0; border-top: 1px solid var(--stroke); }
+            .date-rail-item { min-height: 84px; }
+            #dateRailPrevious, #dateRailCurrent, #dateRailNext { min-height: 84px; }
+            .date-rail-item strong { font-size: 1.8rem; }
+            .controls-bar { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+            .tool-index { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+            .compat-grid, .decision-grid, .widget-grid, .share-card { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        @media (max-width: 560px) {
+            .shell { width: calc(100% - 24px); margin: 10px auto 40px; gap: 14px; }
+            .site-header { min-height: auto; }
+            .wordmark { font-size: 1.65rem; }
+            .primary-nav { gap: 20px; }
+            .compat-strip, .compat-heatmap-grid { scroll-snap-type: x proximity; }
+            .compat-day, .compat-heatmap-cell { scroll-snap-align: start; }
+            .hero-main { padding: 20px 16px; }
+            .reading-heading { gap: 8px; padding-bottom: 16px; }
+            .reading-heading h1 { max-width: 8ch; font-size: clamp(2.8rem, 11vw, 3.5rem); }
+            .calendar-day-stamp { max-width: 94px; font-size: 0.66rem; white-space: normal; }
+            .model-values-heading { display: block; margin-top: 16px; }
+            .model-values-heading h2 { font-size: 0.95rem; }
+            .model-values-heading p { margin-top: 3px; text-align: left; font-size: 0.78rem; }
+            .desktop-break { display: none; }
+            .hero-stats-inline { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 8px; }
+            .stat { padding: 8px 6px 6px; }
+            .stat + .stat { border-left: 1px solid var(--stroke) !important; }
+            .stat small { gap: 5px; font-size: 0.62rem; letter-spacing: 0.045em; }
+            .stat small::before { width: 8px; height: 8px; flex-basis: 8px; }
+            .stat strong { margin-top: 8px; font-size: clamp(1.55rem, 7.4vw, 2.25rem); letter-spacing: -0.055em; }
+            .stat span { font-size: 0.63rem; }
+            .date-rail-item { min-height: 78px; padding: 6px 3px; }
+            #dateRailPrevious, #dateRailCurrent, #dateRailNext { min-height: 78px; }
+            .date-rail-item span, .date-rail-item small { font-size: 0.65rem; }
+            .controls-bar { padding: 12px; }
+            .date-control-form { align-items: end; gap: 7px; }
+            .date-control-form label { font-size: 0.78rem; }
+            .date-control-form .bar-submit { padding-inline: 9px; font-size: 0.78rem; }
+            .panel, .forecast-card, .events-card, .extreme-card, .compat-card, .decision-card, .ritual-card, #context, #monthCalendar, #diary, #chrono, #prefs, .story-card, .share-card, .widget-card, .api-card { padding: 15px 13px; }
+            .panel-head { align-items: flex-start; }
+            .panel-head h2, .events-head h2, .extreme-head h2, .compat-head h2, .decision-head h2, .ritual-head h2 { font-size: 1.15rem; }
+            .panel-head p { font-size: 0.8rem; }
+            .panel-head > .button-row { width: 100%; justify-content: flex-start; }
+            .zoom-btns { gap: 3px; }
+            .zoom-btn { min-height: 34px; padding: 5px 7px; font-size: 0.7rem; }
+            .button-row > button { min-height: 36px; padding: 6px 8px; font-size: 0.76rem; }
+            .chart { max-height: none; }
+            .legend { gap: 10px; font-size: 0.76rem; }
+            .chart .axis-label, .chart .marker-label { font-size: 32px; }
+            .reflection-note h2 { font-size: 0.82rem; letter-spacing: 0.12em; line-height: 1.4; }
+            .tool-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+            .tool-links a { min-height: 40px; justify-content: center; padding: 6px; text-align: center; }
+            .welcome-sheet { margin-top: 28px; padding: 24px 18px; }
+            .welcome-form-row { align-items: stretch; }
+            .welcome-form-row input { min-width: 0; }
+            .event-row { grid-template-columns: minmax(60px, 0.35fr) minmax(0, 1fr); }
+            .month-grid { border-spacing: 2px; }
+            .month-cell-link { min-height: 48px; padding: 5px 2px; }
+            .month-average { font-size: 0.65rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+
+        body.embed-view .widget-card { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+        body.embed-view .widget-panel { background: transparent !important; border: 0 !important; }
     </style>
 </head>
-<body<?= $embedMode ? ' class="embed-view" data-theme="' . htmlspecialchars($widgetTheme, ENT_QUOTES) . '"' : '' ?>>
+<body<?= $embedMode ? ' class="embed-view" data-theme="' . htmlspecialchars($widgetTheme, ENT_QUOTES) . '"' : ($showWelcome ? ' class="first-visit"' : '') ?>>
     <main class="shell">
-        <section class="hero">
-            <article class="card hero-main">
-                <div class="hero-topline">
-                    <div class="kicker">Biorritmos</div>
-                    <button id="themeToggleBtn" type="button" class="theme-toggle">Tema claro</button>
-                </div>
-                <div class="hero-body">
-                    <div class="hero-text">
-                        <h1>Un ciclo simple, convertido en un tablero vivo.</h1>
-                        <p class="lead">
-                            Tus tres ritmos como una escena visual: curvas, foco del día y una ventana de 90 días
-                            para explorar picos, valles y simetrías sin instalar nada en la máquina.
-                        </p>
-                        <details class="hero-callout">
-                            <summary>Qué hace esta app</summary>
-                            <div class="hero-chips" aria-label="Resumen del producto">
-                                <span class="hero-chip"><strong>Local</strong> Docker + PHP sin instalar nada</span>
-                                <span class="hero-chip"><strong>Shareable</strong> URL con estado persistente</span>
-                                <span class="hero-chip"><strong>Export</strong> PNG listo para compartir</span>
-                            </div>
-                            <p>
-                                Convierte una librería mínima en una experiencia visual: lectura individual, compatibilidad entre personas
-                                y una exportación que puedes compartir sin perder el contexto.
-                            </p>
-                        </details>
-                    </div>
-                    <div class="hero-right">
-                        <div class="hero-stats-inline">
-                            <div class="stat">
-                                <small>Físico</small>
-                                <strong id="stat-physical"><?= htmlspecialchars(valueToPercent($selectedPoint['physical'])) ?></strong>
-                                <span>23 días</span>
-                            </div>
-                            <div class="stat">
-                                <small>Emocional</small>
-                                <strong id="stat-emotional"><?= htmlspecialchars(valueToPercent($selectedPoint['emotional'])) ?></strong>
-                                <span>28 días</span>
-                            </div>
-                            <div class="stat">
-                                <small>Intelectual</small>
-                                <strong id="stat-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
-                                <span>33 días</span>
-                            </div>
-                        </div>
-                        <div class="hero-forecast-chips" id="heroForecastChips" aria-live="polite"></div>
-                    </div>
-                </div>
-            </article>
-        </section>
+        <header class="site-header">
+            <a class="wordmark" href="#lectura" aria-label="Biorrhythms, ir a la lectura">Biorrhythms</a>
+            <?php if (!$embedMode): ?>
+            <nav class="primary-nav" aria-label="Navegación principal">
+                <a href="#lectura" aria-current="page">Lectura</a>
+                <a href="#explorar">Explorar</a>
+            </nav>
+            <?php endif; ?>
+            <button id="themeToggleBtn" type="button" class="theme-toggle">Tema oscuro</button>
+        </header>
 
 <?php if ($showWelcome && !$embedMode): ?>
-        <form class="input-notice" method="get" id="welcomeForm">
-            <p><strong>Bienvenido.</strong> Ahora ves una fecha de ejemplo (<?= htmlspecialchars($defaultBirth) ?>). Introduce tu fecha de nacimiento para ver tus ritmos; solo se guarda en este navegador.</p>
-            <p>
-                <label>Fecha de nacimiento
-                    <input type="date" name="birth" required min="<?= DateInput::MIN ?>" max="<?= DateInput::MAX ?>">
-                </label>
-                <button type="submit" class="bar-submit">Ver mis ritmos</button>
-            </p>
-        </form>
+        <section class="welcome-sheet" aria-labelledby="welcomeTitle">
+            <p class="section-label">Tu lectura personal</p>
+            <h1 id="welcomeTitle">Empieza por tu fecha</h1>
+            <p>Calcula tres ciclos para el día que elijas. Son resultados matemáticos, no mediciones ni predicciones.</p>
+            <form class="welcome-form" method="get" id="welcomeForm">
+                <label for="welcomeBirth">Fecha de nacimiento</label>
+                <div class="welcome-form-row">
+                    <input id="welcomeBirth" type="date" name="birth" required min="<?= DateInput::MIN ?>" max="<?= DateInput::MAX ?>">
+                    <button type="submit" class="bar-submit">Ver mi lectura</button>
+                </div>
+                <small>Se guarda solo en este navegador.</small>
+            </form>
+        </section>
 <?php endif; ?>
 <?php if ($inputNotices !== [] && !$embedMode): ?>
         <div class="input-notice" role="alert">
@@ -2793,101 +3146,154 @@ $seriesData = [
         </div>
 <?php endif; ?>
 
-        <section class="card controls-bar">
-            <form method="get" style="display:contents;">
-                <input type="hidden" name="preset" id="compatPresetInput" value="<?= htmlspecialchars($compatPresetInput) ?>">
-                <label>
-                    Fecha de nacimiento
-                    <input type="date" name="birth" value="<?= htmlspecialchars($birthInput) ?>">
-                </label>
-                <label>
-                    Fecha de la otra persona
-                    <input type="date" name="partner_birth" value="<?= htmlspecialchars($partnerBirthInput) ?>">
-                </label>
-                <label>
-                    Día de foco
-                    <input type="date" name="focus" value="<?= htmlspecialchars($focusInput) ?>">
-                </label>
-                <button type="submit" class="bar-submit">Actualizar vista</button>
-            </form>
-            <div class="bar-slider">
-                <label for="windowSlider">Vista rápida</label>
-                <input id="windowSlider" type="range" min="0" max="<?= (int) (count($window) - 1) ?>" value="<?= $selectedIndex ?>" aria-describedby="selectedLabel">
-                <div class="footer-note" id="selectedLabel" aria-live="polite">
-                    <?= htmlspecialchars($selectedPoint['label']) ?> · desviación <?= (int) $selectedPoint['offset'] ?> días
-                </div>
-            </div>
-        </section>
-
-        <p class="disclaimer">
-            Los biorritmos son un modelo clásico sin validez predictiva demostrada (Hines, 1998, <em>Psychological Reports</em> 83).
-            Úsalos como marco de reflexión y autoobservación, no para decisiones médicas, financieras o legales.
-            La numerología y la astrología de esta página son marcos simbólicos, no evidencia empírica.
-        </p>
-
-        <section class="section card panel chart-wrap">
-            <div class="panel-head">
-                <div>
-                    <h2>Ritmos en el tiempo</h2>
-                    <p>La línea central es cero. Arriba es energía positiva; abajo, fase baja.</p>
-                </div>
-                <div class="button-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                    <div class="zoom-btns">
-                        <button type="button" class="zoom-btn" data-zoom="7">1S</button>
-                        <button type="button" class="zoom-btn" data-zoom="30">30D</button>
-                        <button type="button" class="zoom-btn" data-zoom="60">60D</button>
-                        <button type="button" class="zoom-btn is-active" data-zoom="91">90D</button>
+        <section class="hero" id="lectura" aria-labelledby="readingDateHeading">
+            <div class="journal-layout">
+                <nav class="date-rail" aria-label="Días cercanos">
+                    <a class="date-rail-item" id="dateRailPrevious" href="<?= htmlspecialchars($monthLink($previousDayDate->format('Y-m-d'))) ?>" aria-label="Día anterior: <?= htmlspecialchars(\Biorrhythms\DateFormatter::long($previousDayDate)) ?>">
+                        <strong><?= $previousDayDate->format('j') ?></strong>
+                        <span><?= htmlspecialchars($readingMonths[(int) $previousDayDate->format('n')] . ' ' . $previousDayDate->format('Y')) ?></span>
+                        <small><?= htmlspecialchars($readingWeekdaysShort[(int) $previousDayDate->format('N')]) ?></small>
+                    </a>
+                    <a class="date-rail-item is-selected" id="dateRailCurrent" href="<?= htmlspecialchars($monthLink($focusDate->format('Y-m-d'))) ?>" aria-current="date" aria-label="Día seleccionado: <?= htmlspecialchars(\Biorrhythms\DateFormatter::long($focusDate)) ?>">
+                        <strong><?= $focusDate->format('j') ?></strong>
+                        <span><?= htmlspecialchars($readingMonths[(int) $focusDate->format('n')] . ' ' . $focusDate->format('Y')) ?></span>
+                        <small><?= htmlspecialchars($readingWeekdaysShort[(int) $focusDate->format('N')]) ?></small>
+                    </a>
+                    <a class="date-rail-item" id="dateRailNext" href="<?= htmlspecialchars($monthLink($nextDayDate->format('Y-m-d'))) ?>" aria-label="Día siguiente: <?= htmlspecialchars(\Biorrhythms\DateFormatter::long($nextDayDate)) ?>">
+                        <strong><?= $nextDayDate->format('j') ?></strong>
+                        <span><?= htmlspecialchars($readingMonths[(int) $nextDayDate->format('n')] . ' ' . $nextDayDate->format('Y')) ?></span>
+                        <small><?= htmlspecialchars($readingWeekdaysShort[(int) $nextDayDate->format('N')]) ?></small>
+                    </a>
+                </nav>
+                <article class="card hero-main">
+                    <div class="reading-heading">
+                        <div>
+                            <p class="reading-weekday" id="readingWeekday"><?= htmlspecialchars($readingWeekday) ?></p>
+                            <h1 id="readingDateHeading"><?= htmlspecialchars($readingDateLabel) ?></h1>
+                        </div>
+                        <p class="calendar-day-stamp" id="calendarDayStamp">Día <?= $readingDayOfYear ?> de <?= $readingYearLength ?></p>
                     </div>
-                    <button id="exportPngBtn" type="button">Exportar PNG</button>
-                    <button id="jumpToTodayBtn" type="button" class="secondary-btn">Volver al día foco</button>
+                <div class="model-values-heading">
+                        <h2>Valores del modelo</h2>
+                    <p>Salidas matemáticas (no son mediciones)</p>
+                    </div>
+                    <div class="hero-stats-inline" aria-label="Valores calculados para el día seleccionado">
+                        <div class="stat stat-physical">
+                            <small>Físico</small>
+                            <strong id="stat-physical"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['physical'])) ?></strong>
+                            <span>Ciclo de 23 días</span>
+                        </div>
+                        <div class="stat stat-emotional">
+                            <small>Emocional</small>
+                            <strong id="stat-emotional"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['emotional'])) ?></strong>
+                            <span>Ciclo de 28 días</span>
+                        </div>
+                        <div class="stat stat-intellectual">
+                            <small>Intelectual</small>
+                            <strong id="stat-intellectual"><?= htmlspecialchars(valueToSignedPercent($selectedPoint['intellectual'])) ?></strong>
+                            <span>Ciclo de 33 días</span>
+                        </div>
+                    </div>
+                <section class="chart-wrap" aria-labelledby="chartTitle">
+                    <div class="panel-head">
+                        <div>
+                            <h2 id="chartTitle">Ciclo de 90 días</h2>
+                        </div>
+                        <div class="button-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div class="zoom-btns">
+                                <button type="button" class="zoom-btn" data-zoom="7">7 días</button>
+                                <button type="button" class="zoom-btn" data-zoom="30">30 días</button>
+                                <button type="button" class="zoom-btn" data-zoom="60">60 días</button>
+                                <button type="button" class="zoom-btn is-active" data-zoom="91">90 días</button>
+                            </div>
+                            <button id="exportPngBtn" type="button">Exportar PNG</button>
+                            <button id="jumpToTodayBtn" type="button" class="secondary-btn">Volver al día foco</button>
+                        </div>
+                    </div>
+                    <svg class="chart" viewBox="0 0 1100 315" role="img" aria-label="Gráfico de líneas de los ritmos físico, emocional e intelectual a lo largo del tiempo. La línea central representa cero; por encima, valores positivos; por debajo, valores negativos.">
+                        <defs>
+                            <linearGradient id="bgFade" x1="0" x2="1">
+                                <stop offset="0%" stop-color="rgba(255,255,255,0.05)"></stop>
+                                <stop offset="100%" stop-color="rgba(255,255,255,0.01)"></stop>
+                            </linearGradient>
+                        </defs>
+                        <rect x="0" y="0" width="1100" height="315" rx="0" fill="none"></rect>
+                        <g id="grid"></g>
+                        <g id="paths"></g>
+                        <g id="markers"></g>
+                    </svg>
+                    <div class="legend">
+                        <span><i class="dot" style="background: var(--physical)"></i> Físico</span>
+                        <span><i class="dot" style="background: var(--emotional)"></i> Emocional</span>
+                        <span><i class="dot" style="background: var(--intellectual)"></i> Intelectual</span>
+                    </div>
+                </section>
+                <section class="reflection-note" aria-labelledby="reflectionTitle">
+                    <h2 id="reflectionTitle">Sugerencia para observar</h2>
+                    <p>Compara el valor del modelo con lo que notas hoy.</p>
+                </section>
+                <div class="controls-bar">
+                    <form method="get" class="date-control-form">
+                        <input type="hidden" name="preset" id="compatPresetInput" value="<?= htmlspecialchars($compatPresetInput) ?>">
+                        <input type="hidden" name="birth" value="<?= htmlspecialchars($birthInput) ?>">
+                        <input type="hidden" name="partner_birth" value="<?= htmlspecialchars($partnerBirthInput) ?>">
+                        <label for="focusDateInput">Día de lectura
+                            <input id="focusDateInput" type="date" name="focus" value="<?= htmlspecialchars($focusInput) ?>">
+                        </label>
+                        <button type="submit" class="bar-submit">Abrir día</button>
+                    </form>
+                    <div class="bar-slider">
+                        <label for="windowSlider">Recorrer fechas cercanas</label>
+                        <input id="windowSlider" type="range" min="0" max="<?= (int) (count($window) - 1) ?>" value="<?= $selectedIndex ?>" aria-describedby="selectedLabel">
+                        <div class="footer-note" id="selectedLabel" aria-live="polite">
+                            <?= htmlspecialchars($selectedPoint['label']) ?>
+                        </div>
+                    </div>
+                </div>
+                <p class="disclaimer">
+                    Los biorritmos son un modelo clásico sin validez predictiva demostrada (Hines, 1998, <em>Psychological Reports</em> 83).
+                    Úsalos como marco de reflexión y autoobservación, no para decisiones médicas, financieras o legales.
+                    La numerología y la astrología de esta página son marcos simbólicos, no evidencia empírica.
+                </p>
+                </article>
+            </div>
+        </section>
+
+        <nav class="tool-index" id="explorar" aria-labelledby="toolsTitle">
+            <div>
+                <h2 id="toolsTitle">Explorar herramientas</h2>
+                <p>La lectura y el gráfico siguen siendo el punto de partida.</p>
+            </div>
+            <div class="tool-links">
+                <a href="#forecast">Próximos días</a>
+                <a href="#events">Días especiales</a>
+                <a href="#extremeDays">Días extremos</a>
+                <a href="#compatibility">Compatibilidad</a>
+                <a href="#decisions">Ideas del modelo</a>
+                <a href="#ritual">Ritual diario</a>
+                <a href="#context">Contexto simbólico</a>
+                <a href="#monthCalendar">Calendario</a>
+                <a href="#diary">Diario local</a>
+                <a href="#chrono">Cronotipo</a>
+                <a href="#prefs">Avisos y datos</a>
+                <a href="#story">Lectura narrada</a>
+                <a href="#share">Compartir</a>
+                <a href="#widget">Widget</a>
+                <a href="#api">API</a>
+            </div>
+        </nav>
+
+        <section class="section card forecast-card" id="forecast">
+            <div class="events-head">
+                <div>
+                    <h2>Próximos días</h2>
+                    <p>Una vista breve del modelo para seguir explorando.</p>
                 </div>
             </div>
-
-            <svg class="chart" viewBox="0 0 1100 420" role="img" aria-label="Gráfico de líneas de los ritmos físico, emocional e intelectual a lo largo del tiempo. La línea central representa cero; por encima, valores positivos; por debajo, valores negativos.">
-                <defs>
-                    <linearGradient id="bgFade" x1="0" x2="1">
-                        <stop offset="0%" stop-color="rgba(255,255,255,0.05)"></stop>
-                        <stop offset="100%" stop-color="rgba(255,255,255,0.01)"></stop>
-                    </linearGradient>
-                </defs>
-                <rect x="0" y="0" width="1100" height="420" rx="22" fill="url(#bgFade)"></rect>
-                <g id="grid"></g>
-                <g id="paths"></g>
-                <g id="markers"></g>
-            </svg>
-
-            <div class="legend">
-                <span><i class="dot" style="background: var(--physical)"></i> Físico</span>
-                <span><i class="dot" style="background: var(--emotional)"></i> Emocional</span>
-                <span><i class="dot" style="background: var(--intellectual)"></i> Intelectual</span>
-            </div>
-            <p class="chart-text-alternative">El gráfico muestra la evolución diaria de los tres ritmos alrededor de cero. Los valores del día seleccionado se presentan como porcentajes en las tarjetas de resumen.</p>
+            <div class="hero-forecast-chips" id="heroForecastChips" aria-live="polite"></div>
         </section>
 
-        <section class="section detail-grid">
-            <article class="detail">
-                <small>Día de foco</small>
-                <strong id="detail-date"><?= htmlspecialchars($selectedPoint['label']) ?></strong>
-                <em id="detail-offset">Desviación <?= (int) $selectedPoint['offset'] ?> días</em>
-            </article>
-            <article class="detail">
-                <small>Físico</small>
-                <strong id="detail-physical"><?= htmlspecialchars(valueToPercent($selectedPoint['physical'])) ?></strong>
-                <em>Lectura instantánea</em>
-            </article>
-            <article class="detail">
-                <small>Emocional</small>
-                <strong id="detail-emotional"><?= htmlspecialchars(valueToPercent($selectedPoint['emotional'])) ?></strong>
-                <em>Lectura instantánea</em>
-            </article>
-            <article class="detail">
-                <small>Intelectual</small>
-                <strong id="detail-intellectual"><?= htmlspecialchars(valueToPercent($selectedPoint['intellectual'])) ?></strong>
-                <em>Lectura instantánea</em>
-            </article>
-        </section>
-
-        <section class="section card events-card">
+        <section class="section card events-card" id="events">
             <div class="events-head">
                 <div>
                     <h2>Días especiales</h2>
@@ -2898,7 +3304,7 @@ $seriesData = [
             <div class="events-list" id="eventsList"></div>
         </section>
 
-        <section class="section card extreme-card">
+        <section class="section card extreme-card" id="extremeDays">
             <div class="extreme-head">
                 <div>
                     <h2>Días extremos</h2>
@@ -2909,7 +3315,7 @@ $seriesData = [
             <div class="extreme-grid" id="extremeGrid"></div>
         </section>
 
-        <section class="section card compat-card">
+        <section class="section card compat-card" id="compatibility">
             <div class="compat-head">
                 <div>
                     <h2>Modo compatibilidad</h2>
@@ -2919,10 +3325,10 @@ $seriesData = [
             </div>
             <div class="compat-grid">
                 <div class="compat-score">
-                    <small>Score de compatibilidad</small>
+                    <small>Similitud matemática entre ciclos</small>
                     <strong id="compatScore"><?= htmlspecialchars(number_format($focusCompatibility * 100, 1, '.', '')) ?>%</strong>
                     <p id="compatNarrative">
-                        <?= htmlspecialchars('Se calculó una lectura inicial usando ' . $focusInput . ' y ' . $partnerBirthInput . '.') ?>
+                        <?= htmlspecialchars('Se calculó una comparación inicial usando ' . $focusInput . ' y ' . $partnerBirthInput . '.') ?> No mide compatibilidad personal.
                     </p>
                     <div class="compat-inputs">
                         <label>
@@ -2935,27 +3341,27 @@ $seriesData = [
                     </div>
                 </div>
                 <div>
-                    <div class="compat-strip" id="compatStrip"></div>
+                    <div class="compat-strip" id="compatStrip" role="region" aria-label="Comparación diaria desplazable" tabindex="0"></div>
                     <div class="compat-heatmap">
-                        <h3>Heatmap semanal</h3>
-                        <div class="compat-heatmap-grid" id="compatHeatmap"></div>
+                        <h3>Mapa semanal</h3>
+                        <div class="compat-heatmap-grid" id="compatHeatmap" role="region" aria-label="Comparación semanal desplazable" tabindex="0"></div>
                     </div>
                     <div class="compat-footer" id="compatFooter"></div>
                 </div>
             </div>
         </section>
 
-        <section class="section card decision-card">
+        <section class="section card decision-card" id="decisions">
             <div class="decision-head">
                 <div>
-                    <h2>Asistente de decisiones</h2>
-                    <p>Traduce la curva de hoy en una acción concreta y en una semana con intención.</p>
+                    <h2>Ideas del modelo</h2>
+                    <p>Lecturas orientativas para reflexionar; no son instrucciones ni una base para decisiones importantes.</p>
                 </div>
                 <div class="status-pill" id="decisionBadge">Listo para decidir</div>
             </div>
             <div class="decision-grid">
                 <article class="decision-panel">
-                    <small>Recomendación principal</small>
+                    <small>Idea para considerar</small>
                     <strong id="decisionAction">Cargando</strong>
                     <p id="decisionWhy">La lectura del día se está calculando.</p>
                     <div class="decision-tags" id="decisionTags"></div>
@@ -2967,11 +3373,11 @@ $seriesData = [
             </div>
         </section>
 
-        <section class="section card ritual-card">
+        <section class="section card ritual-card" id="ritual">
             <div class="ritual-head">
                 <div>
                     <h2>Ritual diario</h2>
-                    <p>Una secuencia corta para empezar, sostener y cerrar el día.</p>
+                    <p>Una secuencia breve de reflexión, opcional y orientativa.</p>
                 </div>
                 <div class="status-pill" id="ritualBadge">Foco listo</div>
             </div>
@@ -3163,7 +3569,7 @@ $seriesData = [
             </p>
         </section>
 
-        <section class="section card story-card">
+        <section class="section card story-card" id="story">
             <div class="story-head">
                 <div>
                     <h2>Story mode</h2>
@@ -3199,7 +3605,7 @@ $seriesData = [
             </div>
         </section>
 
-        <section class="section card share-card">
+        <section class="section card share-card" id="share">
             <div class="share-preview" id="sharePreview">
                 <div class="share-badge">Tarjeta para compartir</div>
                 <h2 class="share-title" id="shareTitle"><?= htmlspecialchars($profileLabel) ?></h2>
@@ -3239,7 +3645,7 @@ $seriesData = [
             </div>
         </section>
 
-        <section class="section card widget-card">
+        <section class="section card widget-card" id="widget">
             <div class="widget-head">
                 <div>
                     <h2>Widget embebible</h2>
@@ -3315,7 +3721,7 @@ $seriesData = [
             </div>
         </section>
 
-        <section class="section card api-card">
+        <section class="section card api-card" id="api">
             <div class="api-head">
                 <div>
                     <h2>API pública</h2>
@@ -3348,9 +3754,9 @@ $seriesData = [
 
     <script>
         const palette = {
-            physical: getComputedStyle(document.documentElement).getPropertyValue('--physical').trim(),
-            emotional: getComputedStyle(document.documentElement).getPropertyValue('--emotional').trim(),
-            intellectual: getComputedStyle(document.documentElement).getPropertyValue('--intellectual').trim(),
+            physical: getComputedStyle(document.body).getPropertyValue('--physical').trim(),
+            emotional: getComputedStyle(document.body).getPropertyValue('--emotional').trim(),
+            intellectual: getComputedStyle(document.body).getPropertyValue('--intellectual').trim(),
         };
 
         const data = <?= json_encode($seriesData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
@@ -3362,8 +3768,8 @@ $seriesData = [
         const compatPresetInputInitial = <?= json_encode($compatPresetInput, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
         const svgNS = 'http://www.w3.org/2000/svg';
         const width = 1100;
-        const height = 420;
-        const padding = { top: 34, right: 28, bottom: 42, left: 28 };
+        const height = 315;
+        const padding = { top: 12, right: 54, bottom: 42, left: 60 };
         const innerWidth = width - padding.left - padding.right;
         const innerHeight = height - padding.top - padding.bottom;
         const centerY = padding.top + innerHeight / 2;
@@ -3372,6 +3778,11 @@ $seriesData = [
         const pathsGroup = document.getElementById('paths');
         const markersGroup = document.getElementById('markers');
         const slider = document.getElementById('windowSlider');
+        const focusDateInput = document.getElementById('focusDateInput');
+        const readingDateHeading = document.getElementById('readingDateHeading');
+        const readingWeekday = document.getElementById('readingWeekday');
+        const calendarDayStamp = document.getElementById('calendarDayStamp');
+        const dateRailItems = document.querySelectorAll('.date-rail-item');
         const exportPngBtn = document.getElementById('exportPngBtn');
         const jumpToTodayBtn = document.getElementById('jumpToTodayBtn');
         const copySummaryBtn = document.getElementById('copySummaryBtn');
@@ -3439,13 +3850,22 @@ $seriesData = [
         const isEmbedView = document.body.classList.contains('embed-view');
         let theme = isEmbedView
             ? (document.body.dataset.theme || 'dark')
-            : (window.localStorage.getItem('biorrhythms-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+            : (window.localStorage.getItem('biorrhythms-theme') || 'light');
 
         function applyTheme(nextTheme) {
             theme = nextTheme === 'light' ? 'light' : 'dark';
             document.body.dataset.theme = theme;
             if (themeToggleBtn) themeToggleBtn.textContent = theme === 'light' ? 'Tema oscuro' : 'Tema claro';
             if (!isEmbedView) window.localStorage.setItem('biorrhythms-theme', theme);
+            Object.assign(palette, {
+                physical: getComputedStyle(document.body).getPropertyValue('--physical').trim(),
+                emotional: getComputedStyle(document.body).getPropertyValue('--emotional').trim(),
+                intellectual: getComputedStyle(document.body).getPropertyValue('--intellectual').trim(),
+            });
+            document.querySelectorAll('.path').forEach((path) => {
+                path.setAttribute('stroke', palette[path.dataset.series]);
+            });
+            if (widgetChartPaths?.childElementCount) updateWidgetChart();
             updateWidgetEmbedSnippet();
         }
 
@@ -3474,7 +3894,8 @@ $seriesData = [
         function buildGrid() {
             gridGroup.innerHTML = '';
 
-            [-1, -0.5, 0, 0.5, 1].forEach((value) => {
+            const valueLabels = [[1, '+100%'], [0.5, '+50%'], [0, '0%'], [-0.5, '−50%'], [-1, '−100%']];
+            valueLabels.forEach(([value, label]) => {
                 const y = yFor(value);
                 gridGroup.appendChild(make('line', {
                     x1: padding.left,
@@ -3483,6 +3904,35 @@ $seriesData = [
                     y2: y,
                     class: value === 0 ? 'zero-line' : 'grid-line'
                 }));
+                const valueLabel = make('text', {
+                    x: 4,
+                    y: y + 4,
+                    class: 'axis-label',
+                    'text-anchor': 'start',
+                });
+                valueLabel.textContent = label;
+                gridGroup.appendChild(valueLabel);
+            });
+
+            const targetTickIntervals = window.matchMedia('(max-width: 700px)').matches ? 4 : 7;
+            const tickStep = Math.max(1, Math.ceil((visibleWindow.length - 1) / targetTickIntervals));
+            const tickIndices = [];
+            for (let index = 0; index < visibleWindow.length; index += tickStep) tickIndices.push(index);
+            if (tickIndices[tickIndices.length - 1] !== visibleWindow.length - 1) tickIndices.push(visibleWindow.length - 1);
+            tickIndices.forEach((index) => {
+                const x = xFor(index);
+                gridGroup.appendChild(make('line', {
+                    x1: x, x2: x, y1: padding.top, y2: height - padding.bottom,
+                    class: 'grid-line',
+                }));
+                const dateLabel = make('text', {
+                    x,
+                    y: height - 8,
+                    class: 'axis-label',
+                    'text-anchor': index === 0 ? 'start' : index === visibleWindow.length - 1 ? 'end' : 'middle',
+                });
+                dateLabel.textContent = visibleWindow[index]?.label?.replace(/^[^ ]+ /, '') ?? '';
+                gridGroup.appendChild(dateLabel);
             });
 
             const markerVi = data.selectedIndex - visibleStartIndex;
@@ -3501,28 +3951,10 @@ $seriesData = [
                     y: padding.top + 12,
                     class: 'marker-label',
                 });
-                label.textContent = 'Hoy';
+                label.textContent = visibleWindow[markerVi]?.label ?? '';
                 markersGroup.appendChild(label);
             }
 
-            // start label
-            const startLabel = make('text', {
-                x: padding.left + 4,
-                y: height - padding.bottom + 16,
-                class: 'marker-label',
-            });
-            startLabel.textContent = visibleWindow[0]?.label ?? '';
-            gridGroup.appendChild(startLabel);
-
-            // end label
-            const endLabel = make('text', {
-                x: width - padding.right - 4,
-                y: height - padding.bottom + 16,
-                class: 'marker-label',
-                'text-anchor': 'end',
-            });
-            endLabel.textContent = visibleWindow[visibleWindow.length - 1]?.label ?? '';
-            gridGroup.appendChild(endLabel);
         }
 
         function buildPaths() {
@@ -3704,24 +4136,57 @@ $seriesData = [
             });
         }
 
+        function updateDateRail(centerDate) {
+            const center = new Date(`${centerDate}T12:00:00`);
+            const weekdayShort = new Intl.DateTimeFormat('es-ES', { weekday: 'short' });
+            const monthYear = new Intl.DateTimeFormat('es-ES', { month: 'short', year: 'numeric' });
+
+            [-1, 0, 1].forEach((offset, index) => {
+                const date = new Date(center);
+                date.setDate(date.getDate() + offset);
+                const isoDate = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+                const entry = dateRailItems[index];
+                const fullLabel = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+                const url = new URL(window.location.href);
+                url.searchParams.set('focus', isoDate);
+                if (birthIsExampleInitial) url.searchParams.delete('birth');
+                else url.searchParams.set('birth', birthInput);
+
+                entry.children[0].textContent = String(date.getDate());
+                entry.children[1].textContent = monthYear.format(date).replace(/\./g, '');
+                entry.children[2].textContent = weekdayShort.format(date).replace(/\./g, '');
+                entry.href = url.toString();
+                entry.setAttribute('aria-label', `${offset === 0 ? 'Día seleccionado' : offset < 0 ? 'Día anterior' : 'Día siguiente'}: ${fullLabel}`);
+                entry.classList.toggle('is-selected', offset === 0);
+                if (offset === 0) entry.setAttribute('aria-current', 'date');
+                else entry.removeAttribute('aria-current');
+            });
+        }
+
         function updateSelected(index) {
             selectedIndex = index;
             const point = data.window[index];
+            const selectedDate = new Date(`${point.date}T12:00:00`);
+            const dateLabel = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+                .format(selectedDate)
+                .replace(/\./g, '');
+            readingDateHeading.textContent = dateLabel;
+            readingWeekday.textContent = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(selectedDate);
+            const year = selectedDate.getFullYear();
+            const dayOfYear = Math.floor((Date.UTC(year, selectedDate.getMonth(), selectedDate.getDate()) - Date.UTC(year, 0, 0)) / 86400000);
+            calendarDayStamp.textContent = `Día ${dayOfYear} de ${new Date(Date.UTC(year, 1, 29)).getUTCDate() === 29 ? 366 : 365}`;
+            focusDateInput.value = point.date;
+            updateDateRail(point.date);
             const focusLabel = point.physical >= point.emotional && point.physical >= point.intellectual
                 ? 'Pico físico'
                 : point.emotional >= point.physical && point.emotional >= point.intellectual
                     ? 'Pico emocional'
                     : 'Pico intelectual';
-            document.getElementById('detail-date').textContent = point.label;
-            document.getElementById('detail-offset').textContent = `Desviación ${point.offset} días`;
-            document.getElementById('detail-physical').textContent = `${(point.physical * 100).toFixed(1)}%`;
-            document.getElementById('detail-emotional').textContent = `${(point.emotional * 100).toFixed(1)}%`;
-            document.getElementById('detail-intellectual').textContent = `${(point.intellectual * 100).toFixed(1)}%`;
-            document.getElementById('stat-physical').textContent = `${(point.physical * 100).toFixed(1)}%`;
-            document.getElementById('stat-emotional').textContent = `${(point.emotional * 100).toFixed(1)}%`;
-            document.getElementById('stat-intellectual').textContent = `${(point.intellectual * 100).toFixed(1)}%`;
+            document.getElementById('stat-physical').textContent = formatSignedPercent(point.physical);
+            document.getElementById('stat-emotional').textContent = formatSignedPercent(point.emotional);
+            document.getElementById('stat-intellectual').textContent = formatSignedPercent(point.intellectual);
             document.getElementById('shareTitle').textContent = focusLabel;
-            document.getElementById('shareSubtitle').textContent = `${point.label} · nacimiento ${birthInput} · foco ${focusInput}`;
+            document.getElementById('shareSubtitle').textContent = `${point.label} · nacimiento ${birthInput} · foco ${point.date}`;
             document.getElementById('sharePhysical').textContent = `${point.physical >= 0 ? '+' : ''}${(point.physical * 100).toFixed(1)}%`;
             document.getElementById('shareEmotional').textContent = `${point.emotional >= 0 ? '+' : ''}${(point.emotional * 100).toFixed(1)}%`;
             document.getElementById('shareIntellectual').textContent = `${point.intellectual >= 0 ? '+' : ''}${(point.intellectual * 100).toFixed(1)}%`;
@@ -3745,7 +4210,10 @@ $seriesData = [
                 markersGroup.lastChild.textContent = point.label;
             }
 
-            document.getElementById('selectedLabel').textContent = `${point.label} · desviación ${point.offset} días`;
+            const offsetText = point.offset === 0
+                ? 'día seleccionado'
+                : `${Math.abs(point.offset)} ${Math.abs(point.offset) === 1 ? 'día' : 'días'} ${point.offset < 0 ? 'antes' : 'después'} del foco`;
+            document.getElementById('selectedLabel').textContent = `${point.label} · ${offsetText}`;
             updateForecast(index);
         }
 
@@ -4002,7 +4470,7 @@ $seriesData = [
             const url = new URL(window.location.href);
             // Never write the example birth into the URL: it would be saved later as if it were the user's own.
             if (!birthIsExampleInitial) url.searchParams.set('birth', birthInput);
-            url.searchParams.set('focus', focusInput);
+            url.searchParams.set('focus', focusDateInput.value || focusInput);
             url.searchParams.set('partner_birth', partnerBirthInput.value || partnerBirthInputInitial);
 
             if (presetInput.value && presetInput.value !== 'custom') {
@@ -4783,6 +5251,8 @@ $seriesData = [
             zoomButtons.forEach((btn) => {
                 btn.classList.toggle('is-active', Number(btn.dataset.zoom) === days);
             });
+            const zoomLabel = [...zoomButtons].find((btn) => Number(btn.dataset.zoom) === days)?.textContent.trim() || `${days} días`;
+            document.getElementById('chartTitle').textContent = `Ciclo de ${zoomLabel}`;
 
             slider.min = String(visibleStartIndex);
             slider.max = String(end - 1);
@@ -4797,6 +5267,12 @@ $seriesData = [
         zoomButtons.forEach((btn) => {
             btn.addEventListener('click', () => setZoom(Number(btn.dataset.zoom)));
         });
+
+        let chartResizeFrame = 0;
+        window.addEventListener('resize', () => {
+            cancelAnimationFrame(chartResizeFrame);
+            chartResizeFrame = requestAnimationFrame(buildGrid);
+        }, { passive: true });
 
         setZoom(91);
         buildSpecialEvents();

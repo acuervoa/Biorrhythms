@@ -8,7 +8,7 @@
  */
 'use strict';
 
-const VERSION = 'v1.5.0';
+const VERSION = 'v1.6.0';
 const STATIC_CACHE = 'biorrhythms-static-' + VERSION;
 const PAGE_CACHE = 'biorrhythms-pages-' + VERSION;
 const MAX_PAGES = 8;

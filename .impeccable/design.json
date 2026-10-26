@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T10:57:09+01:00",
+  "title": "Design System: Biorrhythms",
+  "extensions": {
+    "typographyMeta": {
+      "display": {
+        "displayName": "Fecha editorial",
+        "purpose": "Fecha seleccionada y cifras principales de la lectura."
+      },
+      "body": {
+        "displayName": "Interfaz sans serif",
+        "purpose": "Controles, etiquetas, escalas y lectura funcional."
+      }
+    },
+    "shadows": [
+      {
+        "name": "welcome-sheet",
+        "value": "0 14px 36px rgba(47, 39, 31, 0.08)",
+        "purpose": "Elevación suave de la tarjeta de bienvenida."
+      },
+      {
+        "name": "reading-card",
+        "value": "0 12px 28px rgba(47, 39, 31, 0.07)",
+        "purpose": "Separar discretamente tarjetas exteriores del fondo."
+      }
+    ],
+    "breakpoints": [
+      { "name": "mobile-layout", "value": "560px" },
+      { "name": "single-column", "value": "820px" },
+      { "name": "chart-mobile-ticks", "value": "700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal de formularios, con contraste de tinta sobre papel.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\">Continuar</button>",
+      "css": ".ds-button-primary { min-height: 40px; padding: 8px 12px; color: var(--paper); border: 1px solid var(--text); border-radius: 7px; background: var(--text); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; } .ds-button-primary:hover { color: var(--paper); background: #403830; border-color: #403830; } .ds-button-primary:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; } .ds-button-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acción estándar de navegación o exploración.",
+      "html": "<button class=\"ds-button-secondary\" type=\"button\">Volver al día foco</button>",
+      "css": ".ds-button-secondary { min-height: 40px; padding: 8px 12px; color: var(--text); border: 1px solid var(--stroke); border-radius: 7px; background: var(--paper); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; } .ds-button-secondary:hover { background: var(--paper-muted); border-color: var(--muted); } .ds-button-secondary:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }"
+    },
+    {
+      "name": "Date Field",
+      "kind": "input",
+      "refersTo": "input-date",
+      "description": "Campo de fecha para cambiar el día consultado.",
+      "html": "<label class=\"ds-date-field\">Fecha <input type=\"date\" value=\"2026-10-26\"></label>",
+      "css": ".ds-date-field { display: grid; gap: 4px; color: var(--text); font: inherit; font-size: 0.9rem; font-weight: 600; } .ds-date-field input { min-height: 42px; padding: 8px 10px; color: var(--text); border: 1px solid var(--stroke); border-radius: 6px; background: var(--paper); font: inherit; } .ds-date-field input:hover { border-color: var(--muted); } .ds-date-field input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }"
+    },
+    {
+      "name": "Primary Navigation",
+      "kind": "nav",
+      "description": "Rutas principales Lectura y Explorar; el activo se marca con regla terracota.",
+      "html": "<nav class=\"ds-primary-nav\"><a href=\"#lectura\" aria-current=\"page\">Lectura</a><a href=\"#explorar\">Explorar</a></nav>",
+      "css": ".ds-primary-nav { display: flex; align-items: center; gap: 22px; } .ds-primary-nav a { min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); border-bottom: 2px solid transparent; font: inherit; font-size: 0.95rem; text-decoration: none; } .ds-primary-nav a[aria-current=page], .ds-primary-nav a:hover { color: var(--text); border-color: var(--physical); } .ds-primary-nav a:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }"
+    },
+    {
+      "name": "Tool Link",
+      "kind": "chip",
+      "description": "Enlace compacto a una herramienta secundaria.",
+      "html": "<a class=\"ds-tool-link\" href=\"#calendario\">Calendario</a>",
+      "css": ".ds-tool-link { min-height: 38px; display: inline-flex; align-items: center; padding: 6px 10px; color: var(--text); border: 1px solid var(--stroke); border-radius: 999px; background: var(--paper); font: inherit; font-size: 0.8rem; text-decoration: none; } .ds-tool-link:hover { border-color: var(--physical); } .ds-tool-link:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }"
+    },
+    {
+      "name": "Daily Reading Sheet",
+      "kind": "custom",
+      "description": "Hoja editorial con fecha, tres valores y divisores discretos.",
+      "html": "<article class=\"ds-reading-sheet\"><p class=\"ds-reading-label\">Lunes</p><h1>26 oct 2026</h1><p class=\"ds-reading-caption\">Valores del modelo · salidas matemáticas</p><div class=\"ds-cycle-values\"><div class=\"ds-cycle-physical\"><small>Físico</small><strong>−81.7%</strong></div><div class=\"ds-cycle-emotional\"><small>Emocional</small><strong>+100.0%</strong></div><div class=\"ds-cycle-intellectual\"><small>Intelectual</small><strong>+9.5%</strong></div></div></article>",
+      "css": ".ds-reading-sheet { padding: 38px 32px; color: var(--text); border: 1px solid var(--stroke); border-radius: 10px; background: var(--paper); box-shadow: 0 12px 28px rgba(47, 39, 31, 0.07); } .ds-reading-label { margin: 0; color: var(--muted); font: 700 0.78rem/1.5 \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif; letter-spacing: 0.17em; text-transform: uppercase; } .ds-reading-sheet h1 { margin: 0; font: 400 clamp(2.8rem, 6vw, 5.2rem)/0.98 Georgia, \"Times New Roman\", serif; letter-spacing: -0.04em; } .ds-reading-caption { margin: 18px 0 0; color: var(--muted); font: 0.88rem/1.5 \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif; } .ds-cycle-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; } .ds-cycle-values > div { min-width: 0; padding: 10px; text-align: center; } .ds-cycle-values > div + div { border-left: 1px solid var(--stroke); } .ds-cycle-values small { display: block; font: 700 0.72rem/1.4 \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif; letter-spacing: 0.06em; text-transform: uppercase; } .ds-cycle-values strong { display: block; margin-top: 6px; font: 400 clamp(1.8rem, 4vw, 3rem)/1 Georgia, \"Times New Roman\", serif; font-variant-numeric: lining-nums tabular-nums; } .ds-cycle-physical { color: var(--physical); } .ds-cycle-emotional { color: var(--emotional); } .ds-cycle-intellectual { color: var(--intellectual); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Bitácora de observación",
+    "overview": "La interfaz se lee como una página de una bitácora editorial: papel cálido, tinta oscura, márgenes generosos y una fecha protagonista. Georgia aporta carácter a fechas y cifras; Avenir Next mantiene controles y explicaciones claros. La lectura individual del día y el gráfico forman el recorrido principal; las herramientas adicionales quedan después.",
+    "keyCharacteristics": [
+      "Papel cálido y tinta carbón.",
+      "Serif editorial para fechas y cifras, sans serif para la interfaz.",
+      "Terracota físico, verde azulado emocional y azul intelectual.",
+      "Valores comunicados como salidas matemáticas, no mediciones ni predicciones."
+    ],
+    "rules": [
+      { "name": "The Cycle Color Rule", "body": "Mantén terracota para físico, verde azulado para emocional y azul para intelectual; acompaña el color con nombre o etiqueta.", "section": "colors" },
+      { "name": "The Editorial Hierarchy Rule", "body": "Reserva Georgia para fecha, marca, cifras y encabezados; usa sans serif para controles, etiquetas y texto funcional.", "section": "typography" },
+      { "name": "The Quiet Surface Rule", "body": "Usa bordes y cambios de tono para separar contenido; reserva las sombras para la hoja o tarjeta exterior.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do conserva el papel, la tinta y el mapeo cromático de los ciclos en claro y oscuro.",
+      "Do presenta primero la lectura personal del día y su gráfico.",
+      "Do describe los porcentajes como valores del modelo o salidas matemáticas."
+    ],
+    "donts": [
+      "Don't describas los valores como energía medida, diagnóstico o predicción validada.",
+      "Don't dependas solo del color para identificar ciclos.",
+      "Don't uses cifras ilustrativas como datos del perfil."
+    ]
+  }
+}

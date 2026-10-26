@@ -3,6 +3,10 @@
 App PHP para visualizar biorritmos personales: físico, emocional e intelectual.
 Sin dependencias externas — no requiere Composer, Node ni PHP instalados en el host.
 
+La lectura está pensada para una persona: configuras tu fecha de nacimiento una vez,
+eliges el día que quieres observar y consultas los tres valores matemáticos del modelo.
+No son mediciones biológicas ni predicciones validadas.
+
 ---
 
 ## Requisitos
@@ -24,6 +28,13 @@ Abre en el navegador:
 ```
 http://localhost:8002
 ```
+
+La primera visita pide la fecha de nacimiento. Después, la pantalla principal abre la
+lectura del día local y permite recorrer otras fechas desde el gráfico o el control de día.
+El perfil se conserva solo en este navegador.
+
+La guía de producto y del sistema visual está en [PRODUCT.md](PRODUCT.md) y
+[DESIGN.md](DESIGN.md). El historial de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
 Para parar:
 
@@ -104,8 +115,8 @@ Tres ritmos sinusoidales calculados desde la fecha de nacimiento:
 
 | Ritmo | Período | Color |
 |---|---|---|
-| Físico | 23 días | Rojo |
-| Emocional | 28 días | Verde |
+| Físico | 23 días | Terracota |
+| Emocional | 28 días | Verde azulado |
 | Intelectual | 33 días | Azul |
 
 Fórmula: `sin(2π × días_desde_nacimiento / período)`
@@ -115,10 +126,13 @@ El valor oscila entre −1 (−100%) y +1 (+100%).
 ### Widgets disponibles
 
 **Timeline interactiva**
-Gráfico SVG de los 3 ritmos. Zoom configurable: 1 semana, 30, 60 o 90 días (por defecto 90D). Slider de «Vista rápida» para navegar día a día. Marcador «Hoy» siempre visible.
+Gráfico SVG de los tres ritmos. Zoom configurable: 7, 30, 60 o 90 días (por defecto 90). El marcador identifica el día seleccionado, que puede ser distinto de hoy. En pantallas estrechas reduce las marcas temporales para que las fechas sigan legibles.
 
-**Hero del día**
-Scores instantáneos de cada ritmo para el día foco. Chips con el mejor y peor día de la semana siguiente.
+**Lectura diaria**
+La fecha elegida, los tres valores calculados y el gráfico forman el recorrido principal. Los ciclos se identifican siempre con color y nombre: físico (terracota), emocional (verde azulado) e intelectual (azul). La lectura conserva la aclaración de que son salidas matemáticas, no mediciones.
+
+**Identidad visual**
+La interfaz usa una hoja editorial de papel cálido, tinta oscura y tipografía serif para fechas y valores. Incluye tema claro y oscuro, diseño responsive y primera visita sin datos de ejemplo.
 
 **Decisión diaria**
 Calendario de 7 días con colores por score medio. Ritual accionable adaptado al ritmo dominante del día.

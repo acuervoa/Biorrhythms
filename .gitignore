@@ -4,3 +4,12 @@ vendor/
 # Caché de phpunit y copias locales de seguridad
 .phpunit.result.cache
 *.before-*
+.worktrees/
+.playwright-cli/
+.impeccable/assets/
+.impeccable/build/
+.impeccable/critique/
+.impeccable/mocks/
+.impeccable/questions/
+.impeccable/review/
+.impeccable/config.json

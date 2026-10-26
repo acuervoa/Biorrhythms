@@ -1,0 +1,14 @@
+# Changelog
+
+Notable changes to Biorrhythms are recorded here.
+
+## [1.6.0] — 2026-10-26
+
+### Changed
+
+- Replaced the dashboard-first presentation with an individual daily-reading flow centered on the selected date.
+- Added an editorial paper-and-ink visual identity with consistent physical, emotional, and intellectual cycle colors in light and dark themes.
+- Clarified that cycle percentages are mathematical model outputs, not measurements or validated predictions.
+- Improved the first-visit form and responsive chart; mobile charts show no more than five temporal labels on the X axis.
+- Preserved existing calculations, URL parameters, API behavior, local storage, export, embed mode, and secondary tools.
+- Added `PRODUCT.md`, `DESIGN.md`, and the `biorrhythms-app` agent skill.
