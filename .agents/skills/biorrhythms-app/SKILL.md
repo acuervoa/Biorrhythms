@@ -45,6 +45,12 @@ Apply this skill to changes in this repository. The root `PRODUCT.md` owns produ
 - If the PERS-Lab checkout has local changes, work from an isolated worktree based on its current `main`; never switch, reset, clean, or overwrite the user's dirty checkout.
 - Do not commit, tag, publish a GitHub release, or push unless the user explicitly authorizes those operations.
 
+## Local domain
+
+- Treat `biorrhythms.local` name resolution and HTTP routing as separate layers. Avahi publishes the mDNS name; Nginx serves the host and proxies to the Docker-published `127.0.0.1:8002` port.
+- Keep the virtual host in `deploy/nginx/biorrhythms.local.conf`. Install it to `/etc/nginx/conf.d/`, run `nginx -t`, and reload Nginx on the host. Avahi alone cannot route HTTP to the app; prefer the existing Avahi publication over adding `/etc/hosts` entries.
+- Verify Avahi with `avahi-resolve-host-name -4 biorrhythms.local`. Verify virtual-host selection independently with `curl --resolve biorrhythms.local:80:127.0.0.1 http://biorrhythms.local/` and confirm the response is Biorrhythms, not the default site.
+
 ## Completion
 
 Report the changed contracts, verification actually run, release tag and URL if published, PERS-Lab integration commit, and any limitations. Preserve worktrees and branches unless the user explicitly asks to remove them.

@@ -2,6 +2,12 @@
 
 Notable changes to Biorrhythms are recorded here.
 
+## [Unreleased]
+
+### Added
+
+- Added the Nginx virtual host and setup instructions for routing `biorrhythms.local` to the local Docker app through Avahi and Nginx.
+
 ## [1.7.0] — 2026-10-26
 
 ### Changed
