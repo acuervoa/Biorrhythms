@@ -47,9 +47,10 @@ Apply this skill to changes in this repository. The root `PRODUCT.md` owns produ
 
 ## Local domain
 
-- Treat `biorrhythms.local` name resolution and HTTP routing as separate layers. Avahi publishes the mDNS name; Nginx serves the host and proxies to the Docker-published `127.0.0.1:8002` port.
-- Keep the virtual host in `deploy/nginx/biorrhythms.local.conf`. Install it to `/etc/nginx/conf.d/`, run `nginx -t`, and reload Nginx on the host. Avahi alone cannot route HTTP to the app; prefer the existing Avahi publication over adding `/etc/hosts` entries.
-- Verify Avahi with `avahi-resolve-host-name -4 biorrhythms.local`. Verify virtual-host selection independently with `curl --resolve biorrhythms.local:80:127.0.0.1 http://biorrhythms.local/` and confirm the response is Biorrhythms, not the default site.
+- Treat `biorrhythms.local` name resolution and HTTP routing as separate layers. A user systemd unit runs Avahi's publisher; Nginx serves the host and proxies to the Docker-published `127.0.0.1:8002` port.
+- Keep the Avahi unit in `deploy/systemd/biorrhythms-local-alias.service`; install it under `~/.config/systemd/user/`, reload the user manager, and enable it. The current host address follows the existing local aliases at `192.168.1.175`.
+- Keep the virtual host in `deploy/nginx/biorrhythms.local.conf`. Inspect `nginx -T` first and install it to `/etc/nginx/conf.d/` only when no existing `server_name biorrhythms.local` block is loaded; then run `nginx -t` and reload Nginx on the host. Avahi alone cannot route HTTP to the app; do not add `/etc/hosts` entries.
+- Verify name resolution with `getent ahostsv4 biorrhythms.local`. Verify virtual-host selection independently with `curl --resolve biorrhythms.local:80:127.0.0.1 http://biorrhythms.local/` and confirm the response is Biorrhythms, not the default site.
 
 ## Completion
 

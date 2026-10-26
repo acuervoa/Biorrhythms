@@ -44,18 +44,30 @@ docker compose down
 
 ### Dominio local con Avahi y Nginx
 
-Avahi resuelve `biorrhythms.local` mediante mDNS; Nginx recibe HTTP en el puerto 80 y
-reenvía las peticiones al contenedor local en `127.0.0.1:8002`. Instala el virtual host
+Avahi publica `biorrhythms.local` mediante mDNS y Nginx recibe HTTP en el puerto 80 y
+reenvía las peticiones al contenedor local en `127.0.0.1:8002`. Instala y activa el
+publicador de Avahi como servicio del usuario:
+
+```bash
+install -D -m 0644 deploy/systemd/biorrhythms-local-alias.service \
+  "$HOME/.config/systemd/user/biorrhythms-local-alias.service"
+systemctl --user daemon-reload
+systemctl --user enable --now biorrhythms-local-alias.service
+```
+
+Comprueba si Nginx ya tiene un bloque para el dominio. Si falta, instala el virtual host
 del repositorio una vez en el host:
 
 ```bash
+sudo nginx -T 2>&1 | grep -F 'server_name biorrhythms.local'
+# Solo si el comando anterior no muestra una configuración existente:
 sudo install -D -m 0644 deploy/nginx/biorrhythms.local.conf /etc/nginx/conf.d/biorrhythms.local.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Comprueba la resolución con `avahi-resolve-host-name -4 biorrhythms.local` y la ruta HTTP
-con `curl -I http://biorrhythms.local/`. Avahi resuelve el nombre; el virtual host de
-Nginx conecta el dominio con la aplicación.
+Comprueba la resolución con `getent ahostsv4 biorrhythms.local` y la ruta HTTP con
+`curl -I http://biorrhythms.local/`. Avahi publica el nombre; el virtual host de Nginx
+conecta el dominio con la aplicación. No añadas este alias a `/etc/hosts`.
 
 ---
 
